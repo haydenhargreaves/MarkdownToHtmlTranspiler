@@ -77,7 +77,7 @@ and once it has been reviewed and approved it will be automatically merged in.
 ###### Pull Requests (PR)
 
 Once a feature is complete, you will create a pull request. Before a request can be merged into `main`,
-two approvals are required (one from each team member). This practice is to promote team work and encourage
+one approval is required (which cannot be the author). This practice is to promote team work and encourage
 code reviews. Each team member is expected to check in frequently and review as often as they are able to,
 however, there is no defined time requirement. Personal communication is totally acceptable as a means to 
 request approval, since I am unsure if this platform will notify members.
