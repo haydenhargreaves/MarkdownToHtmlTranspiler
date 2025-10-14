@@ -36,3 +36,10 @@ this is a break, because it ends with two spaces -> <p> However <br> this is a b
 Double returns also
 
 yields new paragraphs -> <p> Double returns also</p> <p> yields new paragraphs </p>
+
+
+*italic* -> <em>italic</em>
+**bold** -> <strong>bold</strong>
+***italic bold*** -> <strong><em>italic bold</em></strong>
+
+hello **world** -> [TextClass: hello, BoldClass: world]
