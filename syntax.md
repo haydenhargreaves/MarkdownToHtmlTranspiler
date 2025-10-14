@@ -35,4 +35,4 @@ this is a break, because it ends with two spaces -> <p> However <br> this is a b
 
 Double returns also
 
-yield line breaks -> <p> Double returns also <br> yield line breaks </p>
+yields new paragraphs -> <p> Double returns also</p> <p> yields new paragraphs </p>

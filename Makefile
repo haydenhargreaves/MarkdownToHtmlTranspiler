@@ -10,6 +10,7 @@ LIB_DIR = lib
 # Executable name
 TARGET = parser
 
+# Automatically find all source files
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 LIB_FILES := $(wildcard $(LIB_DIR)/*.cpp)
 ALL_SOURCES = $(SRC_FILES) $(LIB_FILES)
@@ -30,10 +31,12 @@ $(BUILD_DIR):
 $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@
 
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(LIB_DIR)/parser.h
+# Generic rule for all .cpp files in the src/ directory
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
-$(BUILD_DIR)/parser.o: $(LIB_DIR)/parser.cpp $(LIB_DIR)/parser.h
+# Generic rule for all .cpp files in the lib/ directory
+$(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 test: all
