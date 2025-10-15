@@ -1,5 +1,5 @@
-#include "./parser.h"
-#include "./util.h"
+#include "parser.h"
+#include "util.h"
 #include <cctype>
 #include <stdexcept>
 
