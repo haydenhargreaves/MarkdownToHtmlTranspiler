@@ -1,4 +1,4 @@
-#include "./util.h"
+#include "util.h"
 
 void removeTrailingWhitespace(std::string &input) {
   size_t start = input.find_first_not_of(" \t\n\r\f\v");
