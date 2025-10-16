@@ -1,14 +1,64 @@
 #include "../lib/inlineNode.h"
 #include "../lib/parser.h"
 #include "../lib/structureNode.h"
+#include "../lib/watchDog.h"
 
 #include <memory>
 #include <stdexcept>
 
-int main(int argc, char **argv) {
+void test_nodes() {
+  // For simplicity
+  using std::make_unique;
+  using std::unique_ptr;
+
+  DocumentNode root;
+  unique_ptr<TextNode> node = make_unique<TextNode>("text node");
+  unique_ptr<BoldNode> bold = make_unique<BoldNode>("bold node");
+  unique_ptr<ItalicNode> italic = make_unique<ItalicNode>("italic node");
+  unique_ptr<BoldItalicNode> bolditalic =
+      make_unique<BoldItalicNode>("bold italic node");
+
+  unique_ptr<HeadingNode> heading = make_unique<HeadingNode>(2);
+  heading->AddChild(std::move(node));
+  heading->AddChild(std::move(bold));
+
+  std::unique_ptr<ParagraphNode> para = std::make_unique<ParagraphNode>();
+  para->AddChild(std::move(italic));
+  para->AddChild(std::move(bolditalic));
+
+  unique_ptr<ListNode> list = make_unique<ListNode>();
+
+  root.AddChild(std::move(heading));
+  root.AddChild(std::move(para));
+  root.AddChild(std::move(list));
+
+  std::cout << root.ToHtml() << std::endl;
+}
+
+/**
+ *Preston: Test to see if watchdog works :)
+ */
+void test_watchdog() {
+  WatchDog wd("test/input.md");
+  wd.start();
+
+  std::cout << "Initial check (should do nothing if file unchanged):\n";
+  wd.checkFile();
+
+  std::cout << "Now, modify or create the file 'example.txt' manually and "
+               "press Enter:\n";
+  std::cin.get(); // Wait for user to press Enter
+
+  // Check again after manual change
+  wd.checkFile();
+
+  std::cout << "Done testing.\n";
+}
+
+void test_input(int argc, char **argv) {
   if (argc <= 1) {
     std::cerr << "Usage: <input_file> <?output_file>" << std::endl;
-    return 0; // TODO: Should return 1?
+    return;
   }
 
   try {
@@ -26,55 +76,6 @@ int main(int argc, char **argv) {
   }
 
   std::cout << std::endl;
-
-  DocumentNode root;
-  std::unique_ptr<TextNode> node = std::make_unique<TextNode>("text node");
-  std::unique_ptr<BoldNode> bold = std::make_unique<BoldNode>("bold node");
-  std::unique_ptr<ItalicNode> italic =
-      std::make_unique<ItalicNode>("italic node");
-  std::unique_ptr<BoldItalicNode> bolditalic =
-      std::make_unique<BoldItalicNode>("bold italic node");
-
-  std::unique_ptr<HeadingNode> heading = std::make_unique<HeadingNode>(2);
-  heading->AddChild(std::move(node));
-  heading->AddChild(std::move(bold));
-
-  std::unique_ptr<ParagraphNode> para = std::make_unique<ParagraphNode>();
-  para->AddChild(std::move(italic));
-  para->AddChild(std::move(bolditalic));
-
-  std::unique_ptr<ListNode> list = std::make_unique<ListNode>();
-
-  root.AddChild(std::move(heading));
-  root.AddChild(std::move(para));
-  root.AddChild(std::move(list));
-
-  std::cout << root.ToHtml() << std::endl;
-
-  return 0;
 }
 
-/**
- *Preston: Test to see if watchdog works :)
- */
-
-// #include "../lib/watchDog.h"
-// #include <iostream>
-//
-// int main() {
-//   WatchDog wd("test/input.md");
-//   wd.start();
-//
-//   std::cout << "Initial check (should do nothing if file unchanged):\n";
-//   wd.checkFile();
-//
-//   std::cout << "Now, modify or create the file 'example.txt' manually and "
-//                "press Enter:\n";
-//   std::cin.get(); // Wait for user to press Enter
-//
-//   // Check again after manual change
-//   wd.checkFile();
-//
-//   std::cout << "Done testing.\n";
-//   return 0;
-// }
+int main(int argc, char **argv) { test_nodes(); }

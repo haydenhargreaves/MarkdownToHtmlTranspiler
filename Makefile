@@ -41,9 +41,6 @@ $(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
 
 test: all
 	./$(TARGET)
-	./$(TARGET) '   '
-	./$(TARGET) ./test/input.md
-	./$(TARGET) ./test/input.md ./test/output.html
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
