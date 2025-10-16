@@ -53,3 +53,28 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+
+/**
+ *Preston: Test to see if watchdog works :)
+ */
+
+// #include "../lib/watchDog.h"
+// #include <iostream>
+//
+// int main() {
+//   WatchDog wd("test/input.md");
+//   wd.start();
+//
+//   std::cout << "Initial check (should do nothing if file unchanged):\n";
+//   wd.checkFile();
+//
+//   std::cout << "Now, modify or create the file 'example.txt' manually and "
+//                "press Enter:\n";
+//   std::cin.get(); // Wait for user to press Enter
+//
+//   // Check again after manual change
+//   wd.checkFile();
+//
+//   std::cout << "Done testing.\n";
+//   return 0;
+// }
