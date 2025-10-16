@@ -11,7 +11,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
       in
-      {
+        {
         # Define the development shell.
         # When you run `nix develop` (or direnv activates), you'll enter this shell.
         devShells.default = pkgs.mkShell {
@@ -35,7 +35,7 @@
             # Exec zsh to replace the current shell process with zsh.
             # This ensures your prompt and zsh configurations load correctly.
             exec zsh
-          '';
+            '';
         };
       }
     );

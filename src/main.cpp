@@ -1,4 +1,8 @@
+#include "../lib/inlineNode.h"
 #include "../lib/parser.h"
+#include "../lib/structureNode.h"
+
+#include <memory>
 #include <stdexcept>
 
 int main(int argc, char **argv) {
@@ -22,6 +26,30 @@ int main(int argc, char **argv) {
   }
 
   std::cout << std::endl;
+
+  DocumentNode root;
+  std::unique_ptr<TextNode> node = std::make_unique<TextNode>("text node");
+  std::unique_ptr<BoldNode> bold = std::make_unique<BoldNode>("bold node");
+  std::unique_ptr<ItalicNode> italic =
+      std::make_unique<ItalicNode>("italic node");
+  std::unique_ptr<BoldItalicNode> bolditalic =
+      std::make_unique<BoldItalicNode>("bold italic node");
+
+  std::unique_ptr<HeadingNode> heading = std::make_unique<HeadingNode>(2);
+  heading->AddChild(std::move(node));
+  heading->AddChild(std::move(bold));
+
+  std::unique_ptr<ParagraphNode> para = std::make_unique<ParagraphNode>();
+  para->AddChild(std::move(italic));
+  para->AddChild(std::move(bolditalic));
+
+  std::unique_ptr<ListNode> list = std::make_unique<ListNode>();
+
+  root.AddChild(std::move(heading));
+  root.AddChild(std::move(para));
+  root.AddChild(std::move(list));
+
+  std::cout << root.ToHtml() << std::endl;
 
   return 0;
 }
