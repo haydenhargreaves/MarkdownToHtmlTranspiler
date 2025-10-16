@@ -16,6 +16,7 @@
 /// method is required. When calling a function that accepts a reference, the
 /// reference operator (*) works perfectly fine. Hence, in this project we will
 /// try to avoid using raw pointers, and only use references when needed.
+/// Reference: https://www.youtube.com/watch?v=AmjoK55h68Y&t=166s
 
 // NOTE ABC
 class Node {
