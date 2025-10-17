@@ -1,11 +1,14 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "node.h"
 #include <iostream>
+#include <memory>
 #include <stack>
 #include <string>
 
 using std::string;
+using std::vector;
 
 /**
  * @brief Markdown parser class.
@@ -48,7 +51,7 @@ public:
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
-  void ParseDocument(void);
+  void ParseDocument();
 
 protected:
   /**
@@ -70,35 +73,57 @@ protected:
    */
   string output_file_path;
 
+  /**
+   * @brief Parser generated tree.
+   *
+   * This value will store the root, which is expected to be a DocumentNode.
+   * This node will mark the start of the tree. The parser will populate this
+   * tree during the parsing process.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  std::unique_ptr<Node> DOM;
+
   // NOTE: We need a stack, just not sure what goes in it yet
   // std::stack<any> stack;
 
 private:
+  // windows... >:(
+  void NormalizeInputStream();
+
   /**
-   * @brief Parse a single line.
+   * @brief Parse a single block of content
    *
    * How does this function work...
    * This is where the magic happens.
    *
-   * @param line Target line to parse, as string.
    * @return DOMNode, once exists
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
-  void ParseLine(string line);
+  std::unique_ptr<Node> ParseBlock();
 
-  // NOTE: Parser operations, again, abstract, just for brainstorming now
-  //       These should operate on internal state, not lines themselves
-  void ParseHeader();
-  void ParseParagraph();
-  void ParseItalic();
-  void ParseBold();
-  void ParseBoldItalic();
+  // Stores index in the string
+  size_t position = 0;
 
-  // NOTE: Character operations, these are just for brainstorming
-  char Peek();
-  void Consume();
-  bool EndOfLine();
+  // Working input content
+  string content;
+
+  std::unique_ptr<Node> ParseParagraph();
+  std::unique_ptr<Node> ParseHeading();
+  vector<std::unique_ptr<Node>> ParseInline();
+
+  void PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str);
+
+  std::unique_ptr<Node> ParseItalic();
+  std::unique_ptr<Node> ParseBold();
+  std::unique_ptr<Node> ParseBoldItalic();
+
+  char Peek(size_t offset = 0);
+  void Consume(size_t count = 1);
+  bool IsEOF();
+
+  void ConsumeWhiteSpace();
 };
 
 #endif
