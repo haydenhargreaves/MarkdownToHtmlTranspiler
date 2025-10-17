@@ -87,9 +87,6 @@ protected:
    */
   std::unique_ptr<Node> DOM;
 
-  // NOTE: We need a stack, just not sure what goes in it yet
-  // std::stack<any> stack;
-
 private:
   /**
    * @brief Normalize the input stream.
