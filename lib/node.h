@@ -67,6 +67,15 @@ public:
   virtual const std::vector<std::unique_ptr<Node>> &GetChilren() const {
     return this->children;
   }
+
+  /**
+   * @brief Is the node empty.
+   *
+   * This is done differently for inline nodes and structure nodes.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  virtual bool IsEmpty() const = 0;
 };
 
 #endif

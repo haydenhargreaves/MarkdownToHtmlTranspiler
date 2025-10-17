@@ -126,6 +126,7 @@ private:
   std::unique_ptr<Node> ParseItalic();
   std::unique_ptr<Node> ParseBold();
   std::unique_ptr<Node> ParseBoldItalic();
+  std::unique_ptr<Node> ParseCode();
 
   char Peek(size_t offset = 0);
   void Consume(size_t count = 1);

@@ -2,6 +2,7 @@
 #define STRUCTURENODE_H
 
 #include "node.h"
+#include <iostream>
 #include <string>
 
 /**
@@ -23,6 +24,15 @@ public:
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
   virtual std::string ToHtml() const = 0;
+
+  /**
+   * @brief Is the node empty.
+   *
+   * This is the same as checking if the node has no children.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  bool IsEmpty() const { return this->children.size() == 0; };
 };
 
 /**

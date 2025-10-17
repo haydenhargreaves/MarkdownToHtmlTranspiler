@@ -21,3 +21,5 @@ string BoldNode::ToHtml() const {
 string BoldItalicNode::ToHtml() const {
   return "<strong><em>" + this->content + "</em></strong>";
 }
+
+string CodeNode::ToHtml() const { return "<code>" + this->content + "</code>"; }
