@@ -78,4 +78,10 @@ void test_input(int argc, char **argv) {
   std::cout << std::endl;
 }
 
-int main(int argc, char **argv) { test_nodes(); }
+int main(int argc, char **argv) {
+  Parser p("input.md");
+  p.ParseDocument();
+
+  Parser p2("README.md");
+  p2.ParseDocument();
+}
