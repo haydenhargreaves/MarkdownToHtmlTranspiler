@@ -76,6 +76,9 @@ void Parser::ParseDocument() {
 
   input_file.close();
 
+  // Remove the windows BS
+  NormalizeInputStream();
+
   // We need document parent
   this->DOM = std::make_unique<DocumentNode>();
 
