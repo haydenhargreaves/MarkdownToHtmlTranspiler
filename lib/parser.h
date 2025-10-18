@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "fileSystem.h"
 #include "node.h"
 #include <iostream>
 #include <memory>
@@ -25,7 +26,8 @@ using std::vector;
  */
 class Parser {
 public:
-  Parser(string input_file_path, string output_file_path = "");
+  Parser(string input_file_path, string output_file_path = "")
+      : filesystem(input_file_path, output_file_path) {};
 
   /**
    * @brief Inspect (view) contents of the class.
@@ -37,7 +39,6 @@ public:
   void Inspect();
 
   /**
-   *
    * @brief Parse an entire document.
    *
    * This function will be called to yield the result. This is the entry point
@@ -53,25 +54,27 @@ public:
    */
   void ParseDocument();
 
+  /**
+   * @brief Write the output to the file.
+   *
+   * Once the tree is generated, this method should be called to actually
+   * write the output. Having this functionality separate allows for more
+   * portability.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  void WriteOutput();
+
 protected:
   /**
-   * @brief Input file path.
+   * @brief File system module to handle file I/O.
    *
-   * Must be provided by the user.
+   * Anything requiring file I/O operations will be handled by this module.
    *
-   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
-   */
-  string input_file_path;
-
-  /**
-   * @brief Output file path.
-   *
-   * If not provided, will be generated using the `input_file_path` by removing
-   * the extension and appending `.html`.
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
-  string output_file_path;
+  FileSystem filesystem;
 
   /**
    * @brief Parser generated tree.
@@ -84,11 +87,16 @@ protected:
    */
   std::unique_ptr<Node> DOM;
 
-  // NOTE: We need a stack, just not sure what goes in it yet
-  // std::stack<any> stack;
-
 private:
-  // windows... >:(
+  /**
+   * @brief Normalize the input stream.
+   *
+   * Replaces all `\r\n` with just `\n` since that is what the parser expects.
+   * Then removes any left over `\r` elements in the stream. If the stream is
+   * empty this method does nothing.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
   void NormalizeInputStream();
 
   /**
@@ -97,7 +105,7 @@ private:
    * How does this function work...
    * This is where the magic happens.
    *
-   * @return DOMNode, once exists
+   * @return Node, to be appended to the callers children.
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */

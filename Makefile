@@ -1,6 +1,6 @@
 # Define the C++ compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -g
+CXXFLAGS = -Wall -g -fPIE
 
 # Directories
 BUILD_DIR = build
@@ -29,15 +29,15 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@ -pie
 
 # Generic rule for all .cpp files in the src/ directory
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ -pie
 
 # Generic rule for all .cpp files in the lib/ directory
 $(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ -pie
 
 test: all
 	./$(TARGET)
