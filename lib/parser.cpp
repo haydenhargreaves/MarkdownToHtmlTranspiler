@@ -288,7 +288,6 @@ void Parser::Consume(size_t count) { this->position += count; };
 bool Parser::IsEOF() { return this->position >= this->content.length(); };
 
 void Parser::ConsumeWhiteSpace() {
-  // TODO: This can be optimized using an accumulator and then consuming
   char c = Peek();
   while (c == ' ' || c == '\t' || c == '\n') {
     Consume();

@@ -18,7 +18,6 @@
 /// try to avoid using raw pointers, and only use references when needed.
 /// Reference: https://www.youtube.com/watch?v=AmjoK55h68Y&t=166s
 
-// NOTE ABC
 class Node {
 protected:
   /**
