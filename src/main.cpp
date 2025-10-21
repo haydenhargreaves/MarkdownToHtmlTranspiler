@@ -79,7 +79,7 @@ void test_input(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-  Parser p("syntax.md");
+  Parser p("input.md");
   p.ParseDocument();
   p.WriteOutput();
 

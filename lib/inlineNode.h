@@ -2,6 +2,7 @@
 #define INLINENODE_H
 
 #include "node.h"
+#include <iostream>
 #include <vector>
 
 /**
@@ -36,6 +37,15 @@ public:
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
   void AddChild(std::unique_ptr<Node> child);
+
+  /**
+   * @brief Is the node empty.
+   *
+   * This is the same as checking if the nodes content is empty.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  bool IsEmpty() const { return this->content.empty(); };
 
 protected:
   std::string content;
@@ -91,6 +101,19 @@ public:
 class BoldItalicNode : public InlineNode {
 public:
   BoldItalicNode(std::string content) : InlineNode(content) {};
+  std::string ToHtml() const;
+};
+
+/**
+ * @desc An inline code block node.
+ *
+ * This node returns it's content wrapped with <code></code> tags.
+ *
+ * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+ */
+class CodeNode : public InlineNode {
+public:
+  CodeNode(std::string content) : InlineNode(content) {};
   std::string ToHtml() const;
 };
 

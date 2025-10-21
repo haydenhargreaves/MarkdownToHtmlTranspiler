@@ -18,7 +18,6 @@
 /// try to avoid using raw pointers, and only use references when needed.
 /// Reference: https://www.youtube.com/watch?v=AmjoK55h68Y&t=166s
 
-// NOTE ABC
 class Node {
 protected:
   /**
@@ -67,6 +66,15 @@ public:
   virtual const std::vector<std::unique_ptr<Node>> &GetChilren() const {
     return this->children;
   }
+
+  /**
+   * @brief Is the node empty.
+   *
+   * This is done differently for inline nodes and structure nodes.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  virtual bool IsEmpty() const = 0;
 };
 
 #endif

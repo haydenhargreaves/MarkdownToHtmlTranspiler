@@ -89,7 +89,7 @@ std::unique_ptr<Node> Parser::ParseParagraph() {
     node->AddChild(std::move(text_node));
   }
 
-  if (node->GetChilren().size() < 1)
+  if (node->IsEmpty())
     return nullptr;
 
   return node;
@@ -143,15 +143,29 @@ vector<std::unique_ptr<Node>> Parser::ParseInline() {
 
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
       PushTextNode(nodes, str);
-      nodes.push_back(std::move(ParseBoldItalic()));
+      auto node = ParseBoldItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
       continue;
     } else if (c == '*' && Peek(1) == '*') {
       PushTextNode(nodes, str);
-      nodes.push_back(std::move(ParseBold()));
+      auto node = ParseBold();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
       continue;
     } else if (c == '*') {
       PushTextNode(nodes, str);
-      nodes.push_back(std::move(ParseItalic()));
+      auto node = ParseItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '`') {
+      PushTextNode(nodes, str);
+      auto node = ParseCode();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
       continue;
     }
 
@@ -231,6 +245,28 @@ std::unique_ptr<Node> Parser::ParseBoldItalic() {
   return std::make_unique<BoldItalicNode>(str);
 }
 
+std::unique_ptr<Node> Parser::ParseCode() {
+  string str;
+  Consume(1);
+
+  while (!IsEOF()) {
+    char c = Peek();
+
+    if (c == '\n' && Peek(1) == '\n')
+      break;
+
+    if (c == '`') {
+      Consume(1);
+      break;
+    }
+
+    str += c;
+    Consume();
+  }
+
+  return std::make_unique<CodeNode>(str);
+}
+
 void Parser::PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str) {
   if (!str.empty())
     nodes.push_back(std::move(std::make_unique<TextNode>(str)));
@@ -252,7 +288,6 @@ void Parser::Consume(size_t count) { this->position += count; };
 bool Parser::IsEOF() { return this->position >= this->content.length(); };
 
 void Parser::ConsumeWhiteSpace() {
-  // TODO: This can be optimized using an accumulator and then consuming
   char c = Peek();
   while (c == ' ' || c == '\t' || c == '\n') {
     Consume();
