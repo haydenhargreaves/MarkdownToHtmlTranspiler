@@ -108,24 +108,14 @@ std::unique_ptr<Node> Parser::ParseHeading() {
 
   ConsumeWhiteSpace();
 
-  std::string str;
-  while (!IsEOF()) {
-    c = Peek();
-    // We can stop as soon as we see a new line. Headings are single line blocks
-    if (c == '\n')
-      break;
-
-    // If a newline, use a space instead
-    str += c;
-    Consume();
+  // This should call parse inline
+  auto text_nodes = ParseInline();
+  for (auto &text_node : text_nodes) {
+    node->AddChild(std::move(text_node));
   }
 
-  // BUG: Why do we need to check this?
-  if (str == "")
+  if (node->IsEmpty())
     return nullptr;
-
-  auto text_node = std::make_unique<TextNode>(str);
-  node->AddChild(std::move(text_node));
 
   return node;
 }
@@ -139,6 +129,54 @@ vector<std::unique_ptr<Node>> Parser::ParseInline() {
     // If this char and next char are both newlines: then we have an empty line,
     // we should stop.
     if (c == '\n' && Peek(1) == '\n')
+      break;
+
+    if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBoldItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*' && Peek(1) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBold();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '`') {
+      PushTextNode(nodes, str);
+      auto node = ParseCode();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    // If a newline, use a space instead
+    str += (c == '\n' ? ' ' : c);
+    Consume();
+  }
+
+  // Push the last node, if the string is not empty
+  PushTextNode(nodes, str);
+  return nodes;
+}
+
+vector<std::unique_ptr<Node>> Parser::ParseInlineHeading() {
+  vector<std::unique_ptr<Node>> nodes;
+  string str;
+
+  while (!IsEOF()) {
+    char c = Peek();
+    // We can stop as soon as we see a new line. Headings are single line blocks
+    if (c == '\n')
       break;
 
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
