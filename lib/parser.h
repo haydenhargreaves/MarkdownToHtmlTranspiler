@@ -117,9 +117,14 @@ private:
   // Working input content
   string content;
 
+  // TODO: Document these methods, no more magic methods :)
+
   std::unique_ptr<Node> ParseParagraph();
   std::unique_ptr<Node> ParseHeading();
   vector<std::unique_ptr<Node>> ParseInline();
+
+  // The only difference is the exit condition
+  vector<std::unique_ptr<Node>> ParseInlineHeading();
 
   void PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str);
 
