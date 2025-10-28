@@ -55,11 +55,15 @@ string ParagraphNode::ToHtml() const {
   return ss.str();
 }
 
-// TODO: Implement
 string ListNode::ToHtml() const {
   std::stringstream ss;
-  ss << (this->ordered ? "<ol>NOT YET IMPLEMENTED</ol>"
-                       : "<ul>NOT YET IMPLEMENTED</ul>");
 
+  ss << (this->ordered ? "<ol>" : "<ul>") << "\n";
+
+  for (const auto &child : this->GetChilren()) {
+    ss << "<li>" << child->ToHtml() << "</li>" << "\n";
+  }
+
+  ss << (this->ordered ? "</ol>" : "</ul>") << "\n";
   return ss.str();
 }
