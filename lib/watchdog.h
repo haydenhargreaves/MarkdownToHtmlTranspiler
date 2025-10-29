@@ -15,7 +15,8 @@
 #include <chrono>     //makes timestamps easier
 #include <ctime>      //Convert time_t to std::tm for local time
 #include <filesystem> //allow access to files platform independent
-#include <iomanip>    //Formats std::tim into "YYYY-MM-DD HH-MM-SS"
+#include <functional>
+#include <iomanip> //Formats std::tim into "YYYY-MM-DD HH-MM-SS"
 #include <iostream>
 #include <string>
 
@@ -33,10 +34,13 @@ protected:
    *
    * Checks if a file has been modified
    *
+   * @param callback Callback function to execute when the watchdog notices a
+   * change.
+   *
    * @author Preston Shultz (shultzp1@my.erau.edu)
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
-  void CheckFile();
+  void CheckFile(std::function<void()> callback);
 
 public:
   Watchdog(const std::string &path) : path(path) {}
@@ -46,9 +50,12 @@ public:
    *
    * Starts the watchdog to check of a file is modified
    *
+   * @param callback Callback function to execute when the watchdog notices a
+   * change.
+   *
    * @author Preston Shultz (shultzp1@my.erau.edu)
    */
-  void Start();
+  void Start(std::function<void()> callback);
 
   /**
    * @brief watchdog class.

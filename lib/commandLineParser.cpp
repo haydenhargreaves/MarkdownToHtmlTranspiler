@@ -10,11 +10,11 @@ CLI::CLI(int argc, char **argv) {
           "Error: No input file provided.\nUsage: <program> <input_file>");
     }
     // sets program info
-    programName = argv[0];
-    inputFile = argv[1];
+    program_name = argv[0];
+    input_file = argv[1];
 
     // checks that file has correct file extension
-    if (!(CLI::IsMarkupFile(inputFile))) {
+    if (!(CLI::IsMarkupFile(input_file))) {
       throw std::invalid_argument(
           "Error: Invalid file extension. Expected a '.md' (Markdown) file.");
     }
@@ -54,15 +54,16 @@ bool CLI::IsMarkupFile(const std::string &filename) {
 // place to run commands but IDK IF WE SHOULD USE A HASMAP or how we are going
 // to get each method to run
 void CLI::RunCommands() {
-  for (int i = 0; i < args.size(); i++) {
+  for (size_t i = 0; i < args.size(); i++) {
   }
 }
 
 void CLI::PrintHelp() const {
   std::cout << "Usage:\n"
-            << " " << programName << " <input_file> REQUIRED\n"
+            << "\t" << program_name << " <input_file>\n"
             << "Flags:\n"
-            << " --o, --output <outputFile>, optional output filename\n"
-            << " --w, --watch, enables watchdog\n"
-            << " --s, --stop, stops watchdog\n";
+            << "\t-o, --output <output_file>, optional output filename\n"
+            << "\t-w, --watch, enables watchdog\n";
 }
+
+// ./parser input_file -w dhuahdakhk -o output

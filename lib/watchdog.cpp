@@ -6,19 +6,19 @@
 namespace fs = std::filesystem;
 using namespace std::chrono;
 
-void Watchdog::Start() {
+void Watchdog::Start(std::function<void()> callback) {
   // checks if file exist
   if (!fs::exists(this->path))
     throw std::runtime_error("File does not exist.");
 
   // Loop forever and check the file.
   while (true) {
-    CheckFile();
+    CheckFile(callback);
     std::this_thread::sleep_for(this->POLLING_INTERVAL);
   }
 }
 
-void Watchdog::CheckFile() {
+void Watchdog::CheckFile(std::function<void()> callback) {
   // LONG STORY SHORT:
   // When a file is written to, it aquires an OS lock, which means our program
   // cannot access it. So when we request, it fails. So we should basically just
@@ -41,16 +41,20 @@ void Watchdog::CheckFile() {
         this->last_write_time = currentWriteTime;
 
         time_point before = high_resolution_clock::now();
-
-        // DO SOMETHING
-        std::this_thread::sleep_for(this->POLLING_INTERVAL);
-
+        callback();
         time_point after = high_resolution_clock::now();
 
         duration dur = after - before;
         long ms = std::chrono::duration_cast<milliseconds>(dur).count();
-        std::cout << std::endl
-                  << "Recompiled in \033[36m" << ms << "ms\033[0m" << std::endl;
+        long us = std::chrono::duration_cast<microseconds>(dur).count();
+
+        if (ms > 0) {
+          std::cout << std::endl
+            << "Recompiled in \033[36m" << ms << "ms\033[0m" << std::endl;
+        } else {
+          std::cout << std::endl
+            << "Recompiled in \033[36m" << us << "μs\033[0m" << std::endl;
+        }
       }
     } catch (const std::exception &ex) {
       // On last attempt, bubble the error outward
