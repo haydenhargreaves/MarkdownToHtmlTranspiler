@@ -1,7 +1,7 @@
 #include "../lib/inlineNode.h"
 #include "../lib/parser.h"
 #include "../lib/structureNode.h"
-#include "../lib/watchDog.h"
+#include "../lib/watchdog.h"
 
 #include <memory>
 #include <stdexcept>

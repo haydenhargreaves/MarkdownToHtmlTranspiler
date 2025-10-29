@@ -1,4 +1,4 @@
-#include "watchDog.h"
+#include "watchdog.h"
 
 namespace fs = std::filesystem; // makes it easier to read
 
