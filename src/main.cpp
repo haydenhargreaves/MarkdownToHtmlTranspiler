@@ -1,7 +1,8 @@
+#include "../lib/documentConverter.h"
 #include "../lib/inlineNode.h"
 #include "../lib/parser.h"
 #include "../lib/structureNode.h"
-#include "../lib/watchDog.h"
+#include "../lib/watchdog.h"
 
 #include <memory>
 #include <stdexcept>
@@ -40,19 +41,7 @@ void test_nodes() {
  */
 void test_watchdog() {
   Watchdog wd("test/input.md");
-  wd.Start();
-
-  std::cout << "Initial check (should do nothing if file unchanged):\n";
-  wd.CheckFile();
-
-  std::cout << "Now, modify or create the file 'example.txt' manually and "
-               "press Enter:\n";
-  std::cin.get(); // Wait for user to press Enter
-
-  // Check again after manual change
-  wd.CheckFile();
-
-  std::cout << "Done testing.\n";
+  wd.Start(nullptr);
 }
 
 void test_input(int argc, char **argv) {
@@ -78,4 +67,10 @@ void test_input(int argc, char **argv) {
   std::cout << std::endl;
 }
 
-int main(int argc, char **argv) { test_watchdog(); }
+void test_document_converter() {
+  DocumentConverter dc("test/input.md");
+  dc.ConvertWatcher();
+}
+
+int main(int argc, char **argv) {
+  test_document_converter(); }

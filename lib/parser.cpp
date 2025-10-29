@@ -12,7 +12,8 @@ using std::string;
 using std::vector;
 
 void Parser::Inspect() {
-  std::cerr << "Parser::Inspect() is not yet implemented." << std::endl;
+  std::cout << this->position << std::endl;
+  std::cout << this->content.size() << std::endl;
 }
 
 void Parser::NormalizeInputStream() {
@@ -41,6 +42,9 @@ void Parser::WriteOutput() {
 }
 
 void Parser::ParseDocument() {
+  // NOTE:This needs to be set so the parsing can continue
+  this->position = 0;
+
   try {
     this->content = this->filesystem.ReadInputFile();
   } catch (const std::runtime_error &e) {
