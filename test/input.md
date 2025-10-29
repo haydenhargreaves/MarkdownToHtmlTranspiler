@@ -1,6 +1,6 @@
 
 
-# Hello world in a h1 tag
+# Hello world in an h1 tag
 
 
 ## This is a h2 tag
