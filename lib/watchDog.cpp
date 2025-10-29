@@ -1,63 +1,77 @@
 #include "watchdog.h"
 
 namespace fs = std::filesystem; //makes it easier to read
-
-void Watchdog::Start()
+void WatchDog::start()
 {
-    //Checks if file exist
+    //checks if file exist
     if(!fs::exists(path))
     {
-        //Returns and sets parameters to false if file doesnt exist
+        //returns and sets parameters to false if file doesnt exist
         watching = false;
-        has_initial_time = false;
+        hasInitialTime = false;
         std::cout << "WatchDog: File does not exists: " << path << std::endl;
         return;
     }
-    //Grabs intial write time
-    last_write_time = fs::last_write_time(path);
-    //Sets watchdog
+    //grabs intial write time
+    lastWriteTime = fs::last_write_time(path);
     watching = true;
-    has_initial_time = true;
+    hasInitialTime = true;
     std::cout << "WatchDog: Started" << std::endl;
 }
-
-bool Watchdog::CheckFile(){
+void WatchDog::stop(){
+    watching = false;
+}
+bool WatchDog::checkFile(){
     //If not watching returns false
     if (!watching) return false;
 
     //Checking if file was deleted
     if(!fs::exists(path))
     {
-        if (has_initial_time) {
+        if (hasInitialTime) {
             std::cout << "WatchDog: File was delete: " << path << std::endl;
-            has_initial_time = false;
+            hasInitialTime = false;
             return true;
         }
         return false;
     }
     
-    //Built in function with file system to check last write time
+    //Built in function with file system to check last write tim
     fs::file_time_type currentWriteTime = fs::last_write_time(path);
 
     //File was just created
-    if(!has_initial_time)
+    if(!hasInitialTime)
     {
-        last_write_time = currentWriteTime;
-        has_initial_time = true;
+        lastWriteTime = currentWriteTime;
+        hasInitialTime = true;
         std::cout << "WatchDog: File created: " << path << std::endl;
         return true;
     }
 
     //File modified
-    if (currentWriteTime != last_write_time)
+    if (currentWriteTime != lastWriteTime)
     {
-        last_write_time = currentWriteTime;
+        lastWriteTime = currentWriteTime;
         std::cout << "WatchDog: File modifed at " 
-                  << TimePointToString(last_write_time) << std::endl;
+                  << timePointToString(lastWriteTime) << std::endl;
         return true;      
     }
 
-    //No change
+    } catch (const fs::filesystem_error& e) {
+        // File deleted, inaccessible, or path invalid
+        if (hasInitialTime) {
+            std::cout << "WatchDog: File deleted or inaccessible: " << path << std::endl;
+            hasInitialTime = false;
+            return true;
+        }
+        return false;
+
+    } catch (const std::exception& e) {
+        std::cerr << "WatchDog: Unexpected error checking file: " << e.what() << std::endl;
+        return false;
+    }
+
+    // No change
     return false;
 }
 

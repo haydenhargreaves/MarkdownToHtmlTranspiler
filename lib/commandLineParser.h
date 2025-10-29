@@ -60,6 +60,17 @@ public:
     std::string GetOutputFile() const {return outputFile;}
 
 private:
+
+    /**
+     * @brief Ensures the provided filename has a .markup extension
+     *
+     * @param filename The file name to validate
+     * @return true if file ends with .markup
+     * @return false otherwise
+     * @author Preston Shultz (shultzp1@my.erau.edu)
+     */
+    static bool IsMarkupFile(const std::string& filename);
+    
     std::string programName;
     std::vector<std::string> args;
     std::string inputFile;
