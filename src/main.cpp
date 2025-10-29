@@ -41,18 +41,6 @@ void test_nodes() {
 void test_watchdog() {
   Watchdog wd("test/input.md");
   wd.Start();
-
-  std::cout << "Initial check (should do nothing if file unchanged):\n";
-  wd.CheckFile();
-
-  std::cout << "Now, modify or create the file 'example.txt' manually and "
-               "press Enter:\n";
-  std::cin.get(); // Wait for user to press Enter
-
-  // Check again after manual change
-  wd.CheckFile();
-
-  std::cout << "Done testing.\n";
 }
 
 void test_input(int argc, char **argv) {
