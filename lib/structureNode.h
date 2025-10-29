@@ -111,4 +111,19 @@ public:
   std::string ToHtml() const;
 };
 
+/**
+ * @desc A code block container node.
+ *
+ * This node is used to wrap a code block node. When three '`' are used a
+ * code block should be created. This node's children are expected to be simple
+ * text nodes - containing no formatting at all. Since code blocks are not
+ * parsed any deeper then their parents.
+ *
+ * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+ */
+class CodeBlockNode : public StructureNode {
+public:
+  std::string ToHtml() const;
+};
+
 #endif

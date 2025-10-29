@@ -4,6 +4,7 @@
 #include "structureNode.h"
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -76,11 +77,35 @@ std::unique_ptr<Node> Parser::ParseBlock() {
   // std::unique_ptr<Node> block = std::make_unique<TextNode>(ch);
   // Consume();
 
-  if (Peek() == '#') {
+  char c = Peek();
+  char c_next = Peek(1);
+
+  // 1. Parse heading
+  if (c == '#') {
     return ParseHeading();
   }
 
-  // this is the default case
+  // 2. Parser unordered list
+  if (c == '*' || c == '-' || c == '+') {
+    // Next character must be space or tab
+    if (c_next == ' ' || c_next == '\t') {
+      return ParseList(false);
+    }
+  }
+
+  // 3. Parse ordered list
+  // TODO: This only checks a single digit, should check for 'n' digits
+  if (std::isdigit(c) && c_next == '.') {
+    // TODO: Do we need to check for white space?
+    return ParseList(true);
+  }
+
+  // 4. Parse code block
+  if (c == '`' && c_next == '`' && Peek(2) == '`') {
+    return ParseCodeBlock();
+  }
+
+  // 5. Parser paragraph
   return ParseParagraph();
 }
 
@@ -120,6 +145,75 @@ std::unique_ptr<Node> Parser::ParseHeading() {
 
   if (node->IsEmpty())
     return nullptr;
+
+  return node;
+}
+
+std::unique_ptr<Node> Parser::ParseList(bool ordered) {
+  auto node = std::make_unique<ListNode>(ordered);
+
+  // Consume the required white space and list char ('* ' or '1.')
+  while (true) {
+
+    Consume(ordered ? 2 : 1);
+    ConsumeWhiteSpace();
+
+    // Parse until either '\n\n' (exit) or the next list element is found ('* '
+    // or '1.') If '\n\n', then create a node and exit
+    auto children = ParseInlineListContent();
+    for (auto &child : children) {
+      node->AddChild(std::move(child));
+    }
+
+    char c = Peek();
+    char c_next = Peek(1);
+
+    // 2. Parser unordered list
+    if (c == '*' || c == '-' || c == '+') {
+      if (c_next == ' ' || c_next == '\t') {
+        continue;
+      }
+    }
+
+    // 3. Parse ordered list
+    // TODO: This only checks a single digit, should check for 'n' digits
+    if (std::isdigit(c) && c_next == '.') {
+      continue;
+    }
+
+    break;
+  }
+
+  return node;
+};
+
+std::unique_ptr<Node> Parser::ParseCodeBlock() {
+  auto node = std::make_unique<CodeBlockNode>();
+  string str;
+
+  // Remove the first three characters, the '```'
+  Consume(3);
+
+  // Parse text into a single text node until '```' is found, include everything
+  // else
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == '`' && Peek(1) == '`' && Peek(2) == '`') {
+      Consume(3);
+      break;
+    }
+
+    // Swap any '\n' with BR tags, so it will visually break
+    if (c == '\n')
+      str += "\n<br>\n";
+    else
+      str += c;
+
+    Consume();
+  }
+
+  auto text_node = std::make_unique<RawTextNode>(str);
+  node->AddChild(std::move(text_node));
 
   return node;
 }
@@ -181,6 +275,63 @@ vector<std::unique_ptr<Node>> Parser::ParseInlineHeading() {
     char c = Peek();
     // We can stop as soon as we see a new line. Headings are single line blocks
     if (c == '\n')
+      break;
+
+    if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBoldItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*' && Peek(1) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBold();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '`') {
+      PushTextNode(nodes, str);
+      auto node = ParseCode();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    // If a newline, use a space instead
+    str += (c == '\n' ? ' ' : c);
+    Consume();
+  }
+
+  // Push the last node, if the string is not empty
+  PushTextNode(nodes, str);
+  return nodes;
+}
+
+vector<std::unique_ptr<Node>> Parser::ParseInlineListContent() {
+  vector<std::unique_ptr<Node>> nodes;
+  string str;
+
+  while (!IsEOF()) {
+    char c = Peek();
+    char c_next = Peek(1);
+    // If this char and next char are both newlines: then we have an empty line,
+    // we should stop.
+    if (c == '\n' && Peek(1) == '\n')
+      break;
+
+    // Check if a list block has been found
+    if ((c == '*' || c == '-' || c == '+') && (c_next == ' ' || c_next == '\t'))
+      break;
+
+    if (std::isdigit(c) && c_next == '.')
       break;
 
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
