@@ -117,4 +117,17 @@ public:
   std::string ToHtml() const;
 };
 
+/**
+ * @desc A raw text node.
+ *
+ * This node returns only it content, with no formatting at all.
+ *
+ * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+ */
+class RawTextNode : public InlineNode {
+public:
+  RawTextNode(std::string content) : InlineNode(content) {};
+  std::string ToHtml() const;
+};
+
 #endif

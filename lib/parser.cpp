@@ -4,6 +4,7 @@
 #include "structureNode.h"
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -95,7 +96,12 @@ std::unique_ptr<Node> Parser::ParseBlock() {
     return ParseList(true);
   }
 
-  // 4. Parser paragraph
+  // 4. Parse code block
+  if (c == '`' && c_next == '`' && Peek(2) == '`') {
+    return ParseCodeBlock();
+  }
+
+  // 5. Parser paragraph
   return ParseParagraph();
 }
 
@@ -176,6 +182,37 @@ std::unique_ptr<Node> Parser::ParseList(bool ordered) {
 
   return node;
 };
+
+std::unique_ptr<Node> Parser::ParseCodeBlock() {
+  auto node = std::make_unique<CodeBlockNode>();
+  string str;
+
+  // Remove the first three characters, the '```'
+  Consume(3);
+
+  // Parse text into a single text node until '```' is found, include everything
+  // else
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == '`' && Peek(1) == '`' && Peek(2) == '`') {
+      Consume(3);
+      break;
+    }
+
+    // Swap any '\n' with BR tags, so it will visually break
+    if (c == '\n')
+      str += "\n<br>\n";
+    else
+      str += c;
+
+    Consume();
+  }
+
+  auto text_node = std::make_unique<RawTextNode>(str);
+  node->AddChild(std::move(text_node));
+
+  return node;
+}
 
 vector<std::unique_ptr<Node>> Parser::ParseInline() {
   vector<std::unique_ptr<Node>> nodes;

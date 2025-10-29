@@ -123,6 +123,7 @@ private:
   std::unique_ptr<Node> ParseHeading();
   std::unique_ptr<Node> ParseList(bool ordered);
   vector<std::unique_ptr<Node>> ParseInline();
+  std::unique_ptr<Node> ParseCodeBlock();
 
   // The only differences are the exit condition
   vector<std::unique_ptr<Node>> ParseInlineHeading();

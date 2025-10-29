@@ -67,3 +67,16 @@ string ListNode::ToHtml() const {
   ss << (this->ordered ? "</ol>" : "</ul>") << "\n";
   return ss.str();
 }
+
+string CodeBlockNode::ToHtml() const {
+  std::stringstream ss;
+
+  ss << "<code>\n";
+
+  for (const auto &child : this->GetChilren()) {
+    ss << child->ToHtml() << "\n";
+  }
+
+  ss << "</code>\n";
+  return ss.str();
+}

@@ -38,3 +38,10 @@ world
 - hello 
 
 world number two
+
+```
+int x = 5;
+int y = 10;
+
+console.log(x + y); // '15'
+```
