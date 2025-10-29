@@ -69,7 +69,8 @@ void test_input(int argc, char **argv) {
 
 void test_document_converter() {
   DocumentConverter dc("test/input.md");
-  dc.Convert();
+  dc.ConvertWatcher();
 }
 
-int main(int argc, char **argv) { test_document_converter(); }
+int main(int argc, char **argv) {
+  test_document_converter(); }
