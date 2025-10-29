@@ -33,7 +33,7 @@ void test_nodes() {
   root.AddChild(std::move(para));
   root.AddChild(std::move(list));
 
-  std::cout << root.ToHtml() << std::endl;
+  std::cout << root << std::endl;
 }
 
 /**
@@ -72,5 +72,4 @@ void test_document_converter() {
   dc.ConvertWatcher();
 }
 
-int main(int argc, char **argv) {
-  test_document_converter(); }
+int main(int argc, char **argv) { test_document_converter(); }

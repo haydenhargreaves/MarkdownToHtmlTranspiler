@@ -15,7 +15,7 @@ string DocumentNode::ToHtml() const {
         "head>\n\t<body>\n";
 
   for (const auto &child : this->GetChilren()) {
-    ss << child->ToHtml();
+    ss << *child;
   }
 
   ss << "\n\t</body>\n</html>";
@@ -36,7 +36,7 @@ string HeadingNode::ToHtml() const {
   ss << "<h" << size << ">";
 
   for (const auto &child : this->GetChilren()) {
-    ss << child->ToHtml();
+    ss << *child;
   }
 
   ss << "</h" << size << ">\n";
@@ -48,7 +48,7 @@ string ParagraphNode::ToHtml() const {
   ss << "<p>";
 
   for (const auto &child : this->GetChilren()) {
-    ss << child->ToHtml();
+    ss << *child;
   }
 
   ss << "</p>\n";
@@ -61,7 +61,7 @@ string ListNode::ToHtml() const {
   ss << (this->ordered ? "<ol>" : "<ul>") << "\n";
 
   for (const auto &child : this->GetChilren()) {
-    ss << "<li>" << child->ToHtml() << "</li>" << "\n";
+    ss << "<li>" << *child << "</li>" << "\n";
   }
 
   ss << (this->ordered ? "</ol>" : "</ul>") << "\n";
@@ -74,7 +74,7 @@ string CodeBlockNode::ToHtml() const {
   ss << "<code>\n";
 
   for (const auto &child : this->GetChilren()) {
-    ss << child->ToHtml() << "\n";
+    ss << *child << "\n";
   }
 
   ss << "</code>\n";
