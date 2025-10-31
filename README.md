@@ -1,4 +1,4 @@
-# MarkdownToHtmlCompiler
+# MarkdownToHtmlTranspiler
 
 ### Project Overview 
 
