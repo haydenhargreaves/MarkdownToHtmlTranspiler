@@ -14,19 +14,47 @@ CLI::CLI(int argc, char **argv) {
     input_file = argv[1];
 
     // checks that file has correct file extension
-    if (!(CLI::IsMarkupFile(input_file))) {
+    if (!(IsMarkupFile(input_file))) {
       throw std::invalid_argument(
           "Error: Invalid file extension. Expected a '.md' (Markdown) file.");
     }
-    // stores remaining arguments
-    for (int i = 1; i < argc; i++) {
-      args.push_back(argv[i]);
-    }
+
+    ParseArgs(argc, argv);
+    
+
   } catch (const std::invalid_argument &e) {
-    std::cerr << e.what() << "\n";
-    PrintHelp();
-    std::exit(EXIT_FAILURE);
+      std::cerr << e.what() << "\n";
+      PrintHelp(); 
+      std::exit(EXIT_FAILURE);
   }
+}
+
+void CLI::ParseArgs(int argc, char** argv){
+    for (int i = 2; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "-w" || arg == "--watch") {
+            watchdog_enabled = true;
+            continue;
+        }
+
+        if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
+            output_file = argv[++i];
+
+            if (!(IsHtmlFile(output_file))) {
+                throw std::invalid_argument("Error: Invalid file extension. Expected a '.html' (HTML) file.");
+            }
+            
+            continue;
+        }
+
+        if (arg == "-o" || arg == "--output") {
+            throw std::invalid_argument("Error: Missing filename after '-o' or '--output'.");
+        }
+
+        std::cerr << "Warning: Unrecognized argument '" << arg << "' ignored.\n";
+    }
+
 }
 
 bool CLI::IsMarkupFile(const std::string &filename) {
@@ -51,11 +79,17 @@ bool CLI::IsMarkupFile(const std::string &filename) {
          requiredExtension;
 }
 
-// place to run commands but IDK IF WE SHOULD USE A HASMAP or how we are going
-// to get each method to run
-void CLI::RunCommands() {
-  for (size_t i = 0; i < args.size(); i++) {
-  }
+bool CLI::IsHtmlFile(const std::string &filename) {
+    // HTML file extension
+    const std::string requiredExtension = ".html";
+
+    // Ensure the filename is long enough to contain the extension
+    if (filename.size() <= requiredExtension.size()) {
+        return false;
+    }
+
+    // Check if the filename ends with ".html"
+    return filename.substr(filename.size() - requiredExtension.size()) == requiredExtension;
 }
 
 void CLI::PrintHelp() const {
