@@ -19,3 +19,8 @@ void Node::Inspect(int indent) {
     child->Inspect(indent + 1);
   }
 }
+
+std::ostream &operator<<(std::ostream &os, Node const &node) {
+  os << node.ToHtml();
+  return os;
+}
