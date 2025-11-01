@@ -3,16 +3,20 @@
 
 #include "parser.h"
 #include "watchdog.h"
+#include "commandLineParser.h"
 #include <functional>
 
 class DocumentConverter {
 private:
+  CLI cli;
   Parser parser;
   Watchdog watchdog;
 
 public:
-  DocumentConverter(std::string input, std::string output = "")
-      : parser(input, output), watchdog(input) {};
+    DocumentConverter(int argc, char** argv)
+        : cli(argc, argv),
+          parser(cli.GetInputFile(), cli.GetOutputFile()),
+          watchdog(cli.GetInputFile()) {}
 
   void Convert() {
     this->parser.ParseDocument();
@@ -26,7 +30,9 @@ public:
       this->parser.ParseDocument();
       this->parser.WriteOutput();
     };
-    this->watchdog.Start(callback);
+    if (cli.WatchDogEnabled()){
+      this->watchdog.Start(callback);
+    }
   }
 };
 

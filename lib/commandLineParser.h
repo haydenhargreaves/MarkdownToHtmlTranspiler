@@ -52,6 +52,14 @@ public:
    */
   std::string GetInputFile() const { return input_file; }
 
+
+  /**
+   * @brief Returns if watchdog is enabled
+   *
+   * @author Preston Shultz (shultzp1@my.erau.edu)
+   */
+  bool WatchDogEnabled() {return watchdog_enabled;}
+
   /**
    * @brief Returns output file
    *
@@ -60,20 +68,37 @@ public:
   std::string GetOutputFile() const { return output_file; }
 
 private:
+
   /**
    * @brief Ensures the provided filename has a .markup extension
    *
-   * @param filename The file name to validate
    * @return true if file ends with .markup
    * @return false otherwise
    * @author Preston Shultz (shultzp1@my.erau.edu)
    */
   static bool IsMarkupFile(const std::string &filename);
 
+
+  /**
+   * @brief Ensures the provided filename has a .html extension
+   *
+   * @return true if file ends with .html
+   * @return false otherwise
+   * @author Preston Shultz (shultzp1@my.erau.edu)
+   */
+  static bool IsHtmlFile(const std::string &filename);
+
+   /**
+   * @brief Parses the commands
+   *
+   * @author Preston Shultz (shultzp1@my.erau.edu)
+   */
+  void ParseArgs(int argc, char** argv);
+
   std::string program_name;
-  std::vector<std::string> args;
   std::string input_file;
-  std::string output_file;
+  std::string output_file = "";
+  bool watchdog_enabled = false;
 };
 
 #endif

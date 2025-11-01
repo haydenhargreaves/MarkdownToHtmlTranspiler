@@ -68,8 +68,22 @@ void test_input(int argc, char **argv) {
 }
 
 void test_document_converter() {
-  DocumentConverter dc("test/input.md");
-  dc.ConvertWatcher();
+    // Simulate command line:
+    // program name, input file, watch flag, output file
+    const char* argv[] = {
+        "program",         // argv[0] - program name
+        "test/input.md",   // argv[1] - input file
+        "-w",              // argv[2] - enable watchdog
+        "-o",              // argv[3] - output flag
+        "test/output.html"   // argv[4] - output filename
+    };
+    int argc = 5;
+
+    // Construct DocumentConverter with simulated command line
+    DocumentConverter dc(argc, const_cast<char**>(argv));
+
+    // Run the watcher (or use dc.Convert() for single conversion)
+    dc.ConvertWatcher();
 }
 
 int main(int argc, char **argv) {
