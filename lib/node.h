@@ -19,12 +19,23 @@
 /// Reference: https://www.youtube.com/watch?v=AmjoK55h68Y&t=166s
 
 class Node {
+  /**
+   * @brief Override the '<<' operator to write the content of the node
+   * directly.
+   *
+   * This overridden operator will simply write the result of this->ToHtml to
+   * the stream.
+   *
+   * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
+   */
+  friend std::ostream &operator<<(std::ostream &os, Node const &node);
+
 protected:
   /**
    * @brief List of children nodes.
    *
-   * Most nodes will not have children, but some may, therefore this class must
-   * have it.
+   * Most nodes will not have children, but some may, therefore this class
+   * must have it.
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
@@ -58,8 +69,8 @@ public:
   /**
    * @brief Return a read-only (const) list of children.
    *
-   * Return our list of unique ptrs, they are const and therefore only have read
-   * access.
+   * Return our list of unique ptrs, they are const and therefore only have
+   * read access.
    *
    * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
    */
