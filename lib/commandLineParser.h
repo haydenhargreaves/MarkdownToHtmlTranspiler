@@ -32,13 +32,6 @@ public:
   CLI(int argc, char **argv);
 
   /**
-   * @brief Runs Commands
-   *
-   * @author Preston Shultz (shultzp1@my.erau.edu)
-   */
-  void RunCommands();
-
-  /**
    * @brief Prints a list of commands that can be used
    *
    * @author Preston Shultz (shultzp1@my.erau.edu)
