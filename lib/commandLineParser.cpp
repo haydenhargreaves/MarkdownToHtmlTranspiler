@@ -20,41 +20,41 @@ CLI::CLI(int argc, char **argv) {
     }
 
     ParseArgs(argc, argv);
-    
 
   } catch (const std::invalid_argument &e) {
-      std::cerr << e.what() << "\n";
-      PrintHelp(); 
-      std::exit(EXIT_FAILURE);
+    std::cerr << e.what() << "\n";
+    PrintHelp();
+    std::exit(EXIT_FAILURE);
   }
 }
 
-void CLI::ParseArgs(int argc, char** argv){
-    for (int i = 2; i < argc; i++) {
-        std::string arg = argv[i];
+void CLI::ParseArgs(int argc, char **argv) {
+  for (int i = 2; i < argc; i++) {
+    std::string arg = argv[i];
 
-        if (arg == "-w" || arg == "--watch") {
-            watchdog_enabled = true;
-            continue;
-        }
-
-        if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
-            output_file = argv[++i];
-
-            if (!(IsHtmlFile(output_file))) {
-                throw std::invalid_argument("Error: Invalid file extension. Expected a '.html' (HTML) file.");
-            }
-            
-            continue;
-        }
-
-        if (arg == "-o" || arg == "--output") {
-            throw std::invalid_argument("Error: Missing filename after '-o' or '--output'.");
-        }
-
-        std::cerr << "Warning: Unrecognized argument '" << arg << "' ignored.\n";
+    if (arg == "-w" || arg == "--watch") {
+      watchdog_enabled = true;
+      continue;
     }
 
+    if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
+      output_file = argv[++i];
+
+      if (!(IsHtmlFile(output_file))) {
+        throw std::invalid_argument(
+            "Error: Invalid file extension. Expected a '.html' (HTML) file.");
+      }
+
+      continue;
+    }
+
+    if (arg == "-o" || arg == "--output") {
+      throw std::invalid_argument(
+          "Error: Missing filename after '-o' or '--output'.");
+    }
+
+    std::cerr << "Warning: Unrecognized argument '" << arg << "' ignored.\n";
+  }
 }
 
 bool CLI::IsMarkupFile(const std::string &filename) {
@@ -80,16 +80,17 @@ bool CLI::IsMarkupFile(const std::string &filename) {
 }
 
 bool CLI::IsHtmlFile(const std::string &filename) {
-    // HTML file extension
-    const std::string requiredExtension = ".html";
+  // HTML file extension
+  const std::string requiredExtension = ".html";
 
-    // Ensure the filename is long enough to contain the extension
-    if (filename.size() <= requiredExtension.size()) {
-        return false;
-    }
+  // Ensure the filename is long enough to contain the extension
+  if (filename.size() <= requiredExtension.size()) {
+    return false;
+  }
 
-    // Check if the filename ends with ".html"
-    return filename.substr(filename.size() - requiredExtension.size()) == requiredExtension;
+  // Check if the filename ends with ".html"
+  return filename.substr(filename.size() - requiredExtension.size()) ==
+         requiredExtension;
 }
 
 void CLI::PrintHelp() const {
@@ -99,5 +100,3 @@ void CLI::PrintHelp() const {
             << "\t-o, --output <output_file>, optional output filename\n"
             << "\t-w, --watch, enables watchdog\n";
 }
-
-// ./parser input_file -w dhuahdakhk -o output
