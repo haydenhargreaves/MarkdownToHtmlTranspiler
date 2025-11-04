@@ -61,10 +61,23 @@ string ListNode::ToHtml() const {
   ss << (this->ordered ? "<ol>" : "<ul>") << "\n";
 
   for (const auto &child : this->GetChilren()) {
-    ss << "<li>" << *child << "</li>" << "\n";
+    ss << *child;
   }
 
   ss << (this->ordered ? "</ol>" : "</ul>") << "\n";
+  return ss.str();
+}
+
+string ListElementNode::ToHtml() const {
+  std::stringstream ss;
+  ss << "<li>";
+
+  for (const auto &child : this->GetChilren()) {
+    ss << *child;
+  }
+
+  ss << "</li>" << "\n";
+
   return ss.str();
 }
 

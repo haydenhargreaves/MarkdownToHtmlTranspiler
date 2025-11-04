@@ -24,4 +24,7 @@ string BoldItalicNode::ToHtml() const {
 
 string CodeNode::ToHtml() const { return "<code>" + this->content + "</code>"; }
 
-string RawTextNode::ToHtml() const { return this->content; };
+string LinkNode::ToHtml() const {
+  return "<a href=\"" + this->link + "\" target=\"_blank\">" + this->content +
+         "</a>";
+}
