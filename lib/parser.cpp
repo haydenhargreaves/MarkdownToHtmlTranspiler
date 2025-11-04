@@ -138,7 +138,7 @@ std::unique_ptr<Node> Parser::ParseHeading() {
   ConsumeWhiteSpace();
 
   // This should call parse inline
-  auto text_nodes = ParseInline();
+  auto text_nodes = ParseInlineHeading();
   for (auto &text_node : text_nodes) {
     node->AddChild(std::move(text_node));
   }
@@ -158,12 +158,28 @@ std::unique_ptr<Node> Parser::ParseList(bool ordered) {
     Consume(ordered ? 2 : 1);
     ConsumeWhiteSpace();
 
+    // std::unique_ptr<Node> Parser::ParseParagraph() {
+    //   auto node = std::make_unique<ParagraphNode>();
+    //
+    //   // This should call parse inline
+    //   auto text_nodes = ParseInline();
+    //   for (auto &text_node : text_nodes) {
+    //     node->AddChild(std::move(text_node));
+    //   }
+    //
+    //   if (node->IsEmpty())
+    //     return nullptr;
+    //
+    //   return node;
+    // }
+
     // Parse until either '\n\n' (exit) or the next list element is found ('* '
     // or '1.') If '\n\n', then create a node and exit
-    auto children = ParseInlineListContent();
-    for (auto &child : children) {
-      node->AddChild(std::move(child));
-    }
+    auto element = ParseInlineListContent();
+    node->AddChild(std::move(element));
+    // for (auto &child : children) {
+    //   node->AddChild(std::move(child));
+    // }
 
     char c = Peek();
     char c_next = Peek(1);
@@ -212,7 +228,7 @@ std::unique_ptr<Node> Parser::ParseCodeBlock() {
     Consume();
   }
 
-  auto text_node = std::make_unique<RawTextNode>(str);
+  auto text_node = std::make_unique<TextNode>(str);
   node->AddChild(std::move(text_node));
 
   return node;
@@ -228,6 +244,14 @@ vector<std::unique_ptr<Node>> Parser::ParseInline() {
     // we should stop.
     if (c == '\n' && Peek(1) == '\n')
       break;
+
+    if (c == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseLink();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
 
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
       PushTextNode(nodes, str);
@@ -277,6 +301,14 @@ vector<std::unique_ptr<Node>> Parser::ParseInlineHeading() {
     if (c == '\n')
       break;
 
+    if (c == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseLink();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
       PushTextNode(nodes, str);
       auto node = ParseBoldItalic();
@@ -315,50 +347,70 @@ vector<std::unique_ptr<Node>> Parser::ParseInlineHeading() {
   return nodes;
 }
 
-vector<std::unique_ptr<Node>> Parser::ParseInlineListContent() {
-  vector<std::unique_ptr<Node>> nodes;
+std::unique_ptr<Node> Parser::ParseInlineListContent() {
+  vector<std::unique_ptr<Node>> children;
   string str;
 
   while (!IsEOF()) {
     char c = Peek();
-    char c_next = Peek(1);
+    // char c_next = Peek(1);
     // If this char and next char are both newlines: then we have an empty line,
     // we should stop.
     if (c == '\n' && Peek(1) == '\n')
       break;
 
-    // Check if a list block has been found
-    if ((c == '*' || c == '-' || c == '+') && (c_next == ' ' || c_next == '\t'))
-      break;
+    // A single newline: We should consume whitespace and check if the next
+    // character is a list item and the following item is a space
+    if (c == '\n') {
+      PushTextNode(children, str);
+      ConsumeWhiteSpace();
+      char new_c = Peek();
+      char new_c_next = Peek(1);
 
-    if (std::isdigit(c) && c_next == '.')
-      break;
+      if ((new_c == '*' || new_c == '-' || new_c == '+') &&
+          (new_c_next == ' ' || new_c_next == '\t'))
+        break;
+
+      if (std::isdigit(new_c) && new_c_next == '.')
+        break;
+
+      str += ' ';
+      continue;
+    }
+
+    if (c == '[') {
+      PushTextNode(children, str);
+      auto node = ParseLink();
+      if (!node->IsEmpty())
+        children.push_back(std::move(node));
+      continue;
+    }
 
     if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
-      PushTextNode(nodes, str);
+      PushTextNode(children, str);
       auto node = ParseBoldItalic();
       if (!node->IsEmpty())
-        nodes.push_back(std::move(node));
+        children.push_back(std::move(node));
       continue;
     } else if (c == '*' && Peek(1) == '*') {
-      PushTextNode(nodes, str);
+      PushTextNode(children, str);
       auto node = ParseBold();
       if (!node->IsEmpty())
-        nodes.push_back(std::move(node));
+        children.push_back(std::move(node));
       continue;
     } else if (c == '*') {
-      PushTextNode(nodes, str);
+      PushTextNode(children, str);
       auto node = ParseItalic();
       if (!node->IsEmpty())
-        nodes.push_back(std::move(node));
+        children.push_back(std::move(node));
       continue;
     }
 
     if (c == '`') {
-      PushTextNode(nodes, str);
+      PushTextNode(children, str);
       auto node = ParseCode();
       if (!node->IsEmpty())
-        nodes.push_back(std::move(node));
+        children.push_back(std::move(node));
       continue;
     }
 
@@ -368,8 +420,15 @@ vector<std::unique_ptr<Node>> Parser::ParseInlineListContent() {
   }
 
   // Push the last node, if the string is not empty
-  PushTextNode(nodes, str);
-  return nodes;
+  PushTextNode(children, str);
+
+  // Create the list node with the children appended
+  auto element = std::make_unique<ListElementNode>();
+  for (auto &child : children) {
+    element->AddChild(std::move(child));
+  }
+
+  return element;
 }
 
 std::unique_ptr<Node> Parser::ParseItalic() {
@@ -458,6 +517,38 @@ std::unique_ptr<Node> Parser::ParseCode() {
   }
 
   return std::make_unique<CodeNode>(str);
+}
+
+std::unique_ptr<Node> Parser::ParseLink() {
+  // Consume '['
+  Consume();
+
+  string content;
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == ']')
+      break;
+
+    content += c;
+    Consume();
+  }
+
+  // Consume ']('
+  Consume(2);
+
+  string link;
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == ')') {
+      Consume();
+      break;
+    }
+
+    link += c;
+    Consume();
+  }
+
+  return std::make_unique<LinkNode>(link, content);
 }
 
 void Parser::PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str) {

@@ -111,6 +111,11 @@ public:
   std::string ToHtml() const;
 };
 
+class ListElementNode : public StructureNode {
+public:
+  std::string ToHtml() const;
+};
+
 /**
  * @desc A code block container node.
  *

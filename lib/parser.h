@@ -127,7 +127,7 @@ private:
 
   // The only differences are the exit condition
   vector<std::unique_ptr<Node>> ParseInlineHeading();
-  vector<std::unique_ptr<Node>> ParseInlineListContent();
+  std::unique_ptr<Node> ParseInlineListContent();
 
   void PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str);
 
@@ -135,6 +135,7 @@ private:
   std::unique_ptr<Node> ParseBold();
   std::unique_ptr<Node> ParseBoldItalic();
   std::unique_ptr<Node> ParseCode();
+  std::unique_ptr<Node> ParseLink();
 
   char Peek(size_t offset = 0);
   void Consume(size_t count = 1);

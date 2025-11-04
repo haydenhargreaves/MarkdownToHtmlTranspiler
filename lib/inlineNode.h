@@ -118,15 +118,20 @@ public:
 };
 
 /**
- * @desc A raw text node.
+ * @desc An anchor/link container node.
  *
- * This node returns only it content, with no formatting at all.
+ * This node is used to create an inline anchor tag. This node returns the
+ * following <a href="{link}" target="_blank">{content}</a>.
  *
  * @author Hayden Hargreaves (hhargreaves2006@gmail.com)
  */
-class RawTextNode : public InlineNode {
+class LinkNode : public InlineNode {
+protected:
+  std::string link;
+
 public:
-  RawTextNode(std::string content) : InlineNode(content) {};
+  LinkNode(std::string link, std::string content)
+      : InlineNode(content), link(link) {};
   std::string ToHtml() const;
 };
 
