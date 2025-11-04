@@ -72,11 +72,6 @@ std::unique_ptr<Node> Parser::ParseBlock() {
   // Remove whitespace using peek and consume (' ', '\t', '\n')
   ConsumeWhiteSpace();
 
-  // NOTE: Simple example
-  // std::string ch(1, Peek());
-  // std::unique_ptr<Node> block = std::make_unique<TextNode>(ch);
-  // Consume();
-
   char c = Peek();
   char c_next = Peek(1);
 
@@ -94,9 +89,7 @@ std::unique_ptr<Node> Parser::ParseBlock() {
   }
 
   // 3. Parse ordered list
-  // TODO: This only checks a single digit, should check for 'n' digits
   if (std::isdigit(c) && c_next == '.') {
-    // TODO: Do we need to check for white space?
     return ParseList(true);
   }
 
