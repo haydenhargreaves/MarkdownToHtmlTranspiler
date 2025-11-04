@@ -138,7 +138,7 @@ std::unique_ptr<Node> Parser::ParseHeading() {
   ConsumeWhiteSpace();
 
   // This should call parse inline
-  auto text_nodes = ParseInline();
+  auto text_nodes = ParseInlineHeading();
   for (auto &text_node : text_nodes) {
     node->AddChild(std::move(text_node));
   }
