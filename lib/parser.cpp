@@ -98,7 +98,12 @@ std::unique_ptr<Node> Parser::ParseBlock() {
     return ParseCodeBlock();
   }
 
-  // 5. Parser paragraph
+  // 5. Parse image
+  if (c == '!' && c_next == '[') {
+    return ParseImage();
+  }
+
+  // 6. Parser paragraph
   return ParseParagraph();
 }
 
@@ -233,10 +238,19 @@ vector<std::unique_ptr<Node>> Parser::ParseInline() {
 
   while (!IsEOF()) {
     char c = Peek();
+    char c_next = Peek(1);
     // If this char and next char are both newlines: then we have an empty line,
     // we should stop.
     if (c == '\n' && Peek(1) == '\n')
       break;
+
+    if (c == '!' && c_next == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseImage();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
 
     if (c == '[') {
       PushTextNode(nodes, str);
@@ -290,9 +304,18 @@ vector<std::unique_ptr<Node>> Parser::ParseInlineHeading() {
 
   while (!IsEOF()) {
     char c = Peek();
+    char c_next = Peek(1);
     // We can stop as soon as we see a new line. Headings are single line blocks
     if (c == '\n')
       break;
+
+    if (c == '!' && c_next == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseImage();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
 
     if (c == '[') {
       PushTextNode(nodes, str);
@@ -346,7 +369,7 @@ std::unique_ptr<Node> Parser::ParseInlineListContent() {
 
   while (!IsEOF()) {
     char c = Peek();
-    // char c_next = Peek(1);
+    char c_next = Peek(1);
     // If this char and next char are both newlines: then we have an empty line,
     // we should stop.
     if (c == '\n' && Peek(1) == '\n')
@@ -368,6 +391,14 @@ std::unique_ptr<Node> Parser::ParseInlineListContent() {
         break;
 
       str += ' ';
+      continue;
+    }
+
+    if (c == '!' && c_next == '[') {
+      PushTextNode(children, str);
+      auto node = ParseImage();
+      if (!node->IsEmpty())
+        children.push_back(std::move(node));
       continue;
     }
 
@@ -542,6 +573,38 @@ std::unique_ptr<Node> Parser::ParseLink() {
   }
 
   return std::make_unique<LinkNode>(link, content);
+}
+
+std::unique_ptr<Node> Parser::ParseImage() {
+  // Consume '!['
+  Consume(2);
+
+  string alt;
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == ']')
+      break;
+
+    alt += c;
+    Consume();
+  }
+
+  // Consume ']('
+  Consume(2);
+
+  string src;
+  while (!IsEOF()) {
+    char c = Peek();
+    if (c == ')') {
+      Consume();
+      break;
+    }
+
+    src += c;
+    Consume();
+  }
+
+  return std::make_unique<ImageNode>(src, alt);
 }
 
 void Parser::PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str) {
