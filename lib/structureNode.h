@@ -131,4 +131,16 @@ public:
   std::string ToHtml() const;
 };
 
+/**
+ *
+ */
+class ImageNode : public StructureNode {
+  std::string src;
+  std::string alt;
+
+public:
+  ImageNode(std::string src, std::string alt) : src(src), alt(alt) {};
+  std::string ToHtml() const;
+};
+
 #endif

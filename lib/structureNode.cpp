@@ -93,3 +93,9 @@ string CodeBlockNode::ToHtml() const {
   ss << "</code>\n";
   return ss.str();
 }
+
+string ImageNode::ToHtml() const {
+  std::stringstream ss;
+  ss << "<img src=\"" << this->src << "\" alt=\"" << this->alt << "\" />\n";
+  return ss.str();
+}

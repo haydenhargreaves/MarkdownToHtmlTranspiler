@@ -1,295 +1,504 @@
-Date: 2025/02/25
-Desc: After using Neovim for years, I tried the JetBrains products for a month. Here's what I found.
+Date: 2025/05/22
+Desc: Rolling your own version control is not as hard as it sounds. This step by step guide will take you from 0 to 60!
 
-# 30 Days of JetBrains: My Vim Cleanse
+# Self Hosted Git Server: How to
 
-<img src="/journal/JetBrains-Logo.png" alt="Jet Brains Logo" width="500">
+![Gitea Logo](https://hhargreaves.net/journal/gitea-logo.png)
+
+<br>
 
 ###### Author: Hayden Hargreaves
-
-###### Published: 03/27/2025
+###### Published: 05/22/2025
 
 ## Background
 
-I have been using Neovim exclusively for over two years, and in those years I have
-become *"blazingly fast"* and my developer experience has increased exponentially.
-Inspired by popular Twitch Streamer, [The Primeagen](https://www.twitch.tv/theprimeagen),
-I started using Neovim in late 2022. I started with just note-taking using a popular
-Neovim distribution called [NVChad](https://nvchad.com), which allowed me to get a feel
-for the tool and how it can be used. But it was too hard, the learned curve was too steep.
+Version control is one of the most powerful tools used by developers, and Git is the most widely adopted **version control system** (vcs). However, when it comes to hosting Git, everyone does it a 
+little differently. Most people use **[GitHub](https://github.com)** or even [GitLab](https://about.gitlab.com). Large companies typically host their
+own for an added layer of safety and security. That is exactly what this guide will cover, but on a smaller
+scale of course!
 
-Eventually, a few months later, I ran into a YouTube video from The Primeagen where he was
-programming live on Twitch. While watching this video, I was in awe of his speed, efficiency,
-and the tools he was using looked amazing. I decided to give Neovim another try, but this time
-I didn't use NVChad. I wanted to learn how to configure the editor myself, because that is a
-huge part of why Neovim is so popular, and why I still use it to this day.
+Before we dig into the details, what exactly does it mean to *"roll your own version control"* or *"host
+your own git server"*? Well, it's simple, we are going to use a server of our own to deploy an application
+that serves as a web-UI and *hub* for our Git repositories. Before you freak out, we are not going to 
+actually write any code or build the application, there are countless open-source options available for 
+**free** that "home-labbers" such as myself. In this guide, we will be using [Gitea](https://about.gitea.com) due to its ease of use
+and strong support. 
 
-After countless hours of configuration and problems, I finally had a tool that I could call my
-own and begin writing software with. At first, I struggled to understand the appeal. Vim motions
-are confusing and hard to remember. But with time, I became fast, really fast. I started to get
-comments from my peers in class asking how I type so fast and what editor I am using. Most people
-have the same response to my response: "Eh, Vim? Isn't that old?" My answer, Neovim is new fork
-of Vim which is being maintained by a large team of amazing open source developers.
+*NOTE: As an added benefit, it was written in Go and is accepting contributions!*
 
-Over the years, I have tried to convince countless peers to "take the vim pill" and give it a
-try. But after being rejected by almost everyone, finally realized that the tool each developer
-uses really doesn't matter as long as they enjoy it and feel comfortable. However, I strongly
-encourage everyone to give Vim a try at some point. You may love it!
+## Requirements
 
-That final realization is the fuel for this experiment.
+There are only a few things you will need to roll your own Git server. The most important is a server, duh!
+This can be a virtual private server (VPS), an EC2 instance from AWS, or your own hardware. Whatever you have 
+will work, but my recommendation is to purchase your own hardware. I have a large server built of old gaming 
+PC parts, but even a simple [Raspberry Pi](https://www.raspberrypi.com) will due! 
 
-## Why JetBrains?
+Once you have a server and root access (you will need to create and modify a user) you are about 99% there!
+I assume that because you are reading this you have a personal computer. You will need SSH access to your 
+server via a personal computer. This article will walk you through using **[Ansible](https://docs.ansible.com)** to configure your
+server (which requires SSH access). **This guide assumes you are using a Debian or Ubuntu based Linux distro.**
 
-In my first semesters at Embry-Riddle, I had the pleasure of meeting many experienced professionals
-who scoff at my choice of tooling. "To each their own," I say! But after the third or fourth time,
-I started to think that maybe I am missing something? In my Neovim editor I have everything I could
-ever need, countless language servers (LS or LSP) with autocomplete and other features, database
-integration, AI tools like CoPilot, lighting fast navigation via
-[Telescope](https://github.com/nvim-telescope/telescope.nvim) and
-[Harpoon](https://github.com/ThePrimeagen/harpoon), syntax highlighting via
-[TreeSitter](https://github.com/nvim-treesitter/nvim-treesitter), and even git integration from
-[Fugitive](https://github.com/tpope/vim-fugitive). Needless to say, if I want something new, I can
-get it. Granted, plugins are not exclusive to Neovim. Visual Studio Code (VSC), another popular
-integrated development environment (IDE), also has a large plugin ecosystem. However, this argument
-is to rebut against the frequent complaint that Neovim is lacking in features and cannot serve as a
-modern IDE.
+Finally, the last "requirement" is optional, but highly recommended: a personal domain and a [Cloudflare](https://www.cloudflare.com) 
+account. Regardless of whether you have a domain or not, you will be able to access your Git server from 
+your local network. But, if you want access remotely securely, it is best to get your hands on a domain.
+Using Cloudflare allows us access to their [tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/) which will allow us to expose local ports safely.
+More details regarding these tunnels will come later.
 
-That now begs the question, why JetBrains products? The answer is simple: they are the best.
-There is hardly any competition in the proprietary development tools space, the two biggest competitors
-being VSCode (as previously mentioned) and the JetBrains suite of tools. I have experience using both
-tools. I spent lots of time using IntelliJ from JetBrains when I learned Java, and this experience
-opened my eyes to the power of an IDE vs. a typical text editor (Neovim). However, Java is not a simple
-language compared to GoLang (my primary language) or Python (what I use in many of my University classes).
-For that reason, I avoided using such powerful tools when writing code in languages that I did not see
-a huge benefit from. But I have always had a sweet spot for IntelliJ; It was how I was introduced to the
-world of software development. For that reason, I decided to choose JetBrains for this experiment.
+*NOTE: There are other ways to access your server remotely without Cloudflare tunnels, but I will not cover that here.*
 
-## Why Change Now?
+## Preview
 
-Another great question! If I love Neovim so much and I am so productive with a tool, why try something
-new? A professor who I have grown particularly fond of, has always poked fun at me for my choice of
-tooling. He frequently mentions that I should try something else because when I get into the work force,
-I will not be able to use Vim. I have finally had enough! Just kidding. He is right, if I am only
-competent with a single tool, I will struggle in the future. So I decided to spend 30 days using only
-JetBrains products.
+Before continuing, please make sure you have everything you need to get started. Following these steps, 
+**in order** will allow you to go from 0 to self hosting your server with relative ease!
 
-With my student email, I qualify for free access to the JetBrains suite, which is a huge factor in this
-choice. A subscription for a JetBrains editor is nearly $100 a year, **per editor**. In this experiment,
-I will be using **PyCharm**, **WebStorm**, **GoLand**, **CLion**, and **DataGrip**. I do not want to spend
-hundreds of dollars on an editor when so many free options exist, but their education benefits, I cannot
-use that as an excuse. Furthermore, I may as well take advantage of the benefits while I have them!
+1. **Install docker-compose:** We will be running the server in a docker container
+2. **Create the *git* user:** Creating a new user will allow you to access the server using the git user
+3. **Configure docker-compose:** This is the easiest way to install Gitea
+4. **Configure the server:** The server can be configured via the web UI
+5. **Configure SSH access:** The magic begins to happen here
+6. **Configure remote access:** This is the final step that ties the bow on the whole system
 
-## The Migration
 
-Switching from such a personal tool to a proprietary tool is a big jump. My biggest concern was the motions
-I have become so accustomed too. Each JetBrains product has a plugin called **IdeaVim** which implements
-vim motions natively into the editor. In the past, I have used the **VSCode Neovim** plugin, but it felt
-slow, buggy and simply just bad. However, even in just the short time writing this article, I have not noticed
-any large issues with the vim motions in the JetBrains plugin.
+### Disclaimer
 
-Another thing I will miss during these 30 days is the plugins I use in my Neovim configuration. Below, you
-can see a collection of each plugin I use in my setup. Quite a few! Some of my favorites being **Harpoon**
-and **Telescope** which allow me to move between buffers (similar but different from files) with ease. During
-this experiment, I will not install any of these plugins into my JetBrains editors. I could very easily convert
-any of these editors into a copy of my Neovim setup, but that defeats the whole purpose of this trial! I will
-use this editor with very few plugins to allow for more native feel, and to take full advantage of the features
-provided by the tool without handicapping myself to my comfort zone.
+It is assumed that you already have a basic understanding of Ansible and have a basic config setup. As this
+is not an Ansible guide, I will not go into much detail there. However, many of these commands are easy to 
+understand and can be used as normal shell commands.
 
-<br>
+For those who have ansible already configured on their system, we will be using the common **roles** pattern for
+directories and files. A directory structure that looks something like this will yield the best results: 
 
-#### My Neovim Plugins
+```bash
 
-- [dashboard-nvim](https://github.com/glepnir/dashboard-nvim) - A dashboard for Neovim.
-- [emmet-vim](https://github.com/mattn/emmet-vim) - Emmet support for HTML, CSS, etc.
-- [github-copilot.vim](https://github.com/github/copilot.vim) - GitHub Copilot integration.
-- [Harpoon](https://github.com/ThePrimeagen/harpoon) - Quickly jump between files.
-- [hex.nvim](https://github.com/folke/hex.nvim) - Provides hex editing capabilities.
-- [lspkind.nvim](https://github.com/simrat39/lspkind.nvim) - Adds icons to LSP completions.
-- [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) - A statusline plugin.
-- [LuaSnip](https://github.com/L3MON4D3/LuaSnip) - A snippet engine.
-- [markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim) - Preview Markdown files.
-- [Nixvim](https://github.com/nix-community/nixvim) - Integrates Neovim with the Nix package manager for reproducible
-  configurations.
-- [noice.nvim](https://github.com/folke/noice.nvim) - Replaces Vim's default notification system.
-- [none-ls.nvim](https://github.com/nvim-lua/none-ls.nvim) - A "null-ls" implementation for non-LSP servers.
-- [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) - A completion plugin.
-- [nvim-colorizer.lua](https://github.com/norcalli/nvim-colorizer.lua) - Displays colors in the editor.
-- [nvim-git signs](https://github.com/lewis6991/nvim-git-signs) - Displays Git changes in the sign column.
-- [nvim-marks.lua](https://github.com/chentoast/marks.nvim) - Manages marks.
-- [nvim-notify](https://github.com/rcarriga/nvim-notify) - Another notification plugin.
-- [nvim-smart-splits](https://github.com/mrjones2014/nvim-smart-splits) - Manages window splits.
-- [nvim-surround](https://github.com/tpope/nvim-surround) - Easily change surrounding characters (quotes, parentheses,
-  etc.).
-- [nvim-treesitter-undo](https://github.com/RRRRRRRRRRRRRRRR/nvim-treesitter-undo) - Improves undo/redo with Treesitter.
-- [nvim-trouble](https://github.com/folke/nvim-trouble.nvim) - Displays diagnostics in a more user-friendly way.
-- [nvim-ufo](https://github.com/folke/nvim-ufo) - Improves code folding.
-- [render-markdown.nvim](https://github.com/MeanderingProgrammer/render-markdown.nvim) - Another Markdown renderer.
-- [rose-pine](https://github.com/rose-pine/neovim) - Rose pine color theme.
-- [lspsaga.nvim](https://github.com/glepnir/lspsaga.nvim) - Enhances the LSP experience.
-- [tailwind-tools.nvim](https://github.com/luckasRanarison/tailwind-tools.nvim) - Provides Tailwind CSS integration.
-- [Telescope](https://github.com/nvim-telescope/telescope.nvim) - A highly extensible fuzzy finder.
-- [vim-fugitive](https://github.com/tpope/vim-fugitive) - Git integration.
-- [wakatime.vim](https://github.com/wakatime/vim-wakatime) - WakaTime integration for tracking your coding time.
-
-<br>
-
-To remain some level of productivity, I did install a handful of select plugins in each of the
-JetBrains IDEs. They are listed below:
-
-#### JetBrains Plugins
-
-- [IdeaVim](https://plugins.jetbrains.com/plugin/164-ideavim) - Vim motions.
-- [GitHub](https://plugins.jetbrains.com/plugin/13115-github) - GitHub integration, installed by default.
-- [GitLab](https://plugins.jetbrains.com/plugin/22857-gitlab) - GitLab integration, installed by default.
-- [Grazie Pro](https://plugins.jetbrains.com/plugin/16136-grazie-pro) - Grammar help and completion.
-- [Rose Pine](https://plugins.jetbrains.com/plugin/18141-ros-pine) - Rose pine color theme.
-- [NixIdea](https://plugins.jetbrains.com/plugin/8607-nixidea) - Nix and NixOS tooling.
-- [WakaTime](https://plugins.jetbrains.com/plugin/7425-wakatime) - WakaTime integration for tracking your coding time.
-
-## Artificial Intelligence
-
-With AI on the rise, I am faced with the question of using an AI tool in my editor or not. As you've seen above,
-I use **GitHub Copilot** in my Neovim config, which has served me well. In my experience, it is bad at generating
-complex code, but it does an exceptional job with helping me write comments and boilerplate code. However, I have
-found that I think less and rely on Copilot far too much. During these 30 days, I hope to break this habit, which
-I have heard called "the Copilot pause." When writing some code, I often wait a second for Copilot to write it for
-me. This pause proves my reliance on AI has grown too far.
-
-> "After using copilots for a while, you’ve probably noticed the good ol’ copilot “pause.” You know, that moment when
-> you’re just waiting for AI to write what you’re thinking so you can press tab and go on with your life. That’s the pause."
-> ~[Eric Zakariasson](https://anyblockers.com/posts/avoid-the-copilot-pause)
-
-So, during this experiment, I will not use any AI integration in my editor. This includes the **Jetbrains AI Assistant**,
-which is advertised ad nauseam in the IDEs. But I am no programming master, and I do still see benefit in using
-LLMs to help with simple tasks and idea creation. So, I will continue to use chatbots like **ChatGPT** or Google's 
-**Gemini** to help me with day-to-day use cases.
-
-## Editor Setup
-I have written this entire document in WebStorm, but up to now, its only been a few hours of the switch. But one thing I 
-have learned is that the IdeaVim plugin allows for configuration in a `~/.ideavimrc` file. Very similar to Vim, yay! In 
-this fill you can configure all kinds of things, however, I tried not to go overboard with the configuration file and tried 
-to configure most of the editor in the application settings. Again, to make the feeling less "vim-like" and to have a more
-out-of-the-box experience.
-
-```vim
-" These do not work very well :(
-" However, there is a setting for this in the IDE
-" 'Move Line Up/Down' in 'Keymap' settings
-"
-" vnoremap J :m '>+1<CR>gv=gv<CR>
-" vnoremap K :m '<-2<CR>gv=gv<CR>
-
-" Indent lines with tab and shift-tab
-nnoremap <TAB> V>
-nnoremap <S-TAB> V<
-vnoremap <TAB> >gv
-vnoremap <S-TAB> <gv
-
-" Disable the annoying sounds the IdeaVim plugin likes to make
-set visualbell
-set noerrorbells
+.
+├── ansible.cfg
+├── inventory
+│   ├── group_vars
+│   │   └── main.yml
+│   ├── hosts.yml
+│   └── host_vars
+│       └── gophernest.yml
+├── playbooks
+│   ├── common_setup.yml
+│   └── docker_apps.yml
+├── requirements.yml
+└── roles
+    ├── cloudflared
+    │   ├── files
+    │   │   ├── 3c522d3a-5f24-4645-b4ca-695c66e05ef3.json
+    │   │   ├── cert.pem
+    │   │   └── cloudflared
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── tasks
+    │   │   └── main.yml
+    │   ├── templates
+    │   │   └── config.yml.j2
+    │   └── vars
+    │       └── main.yml
+    ├── docker
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── tasks
+    │   │   └── main.yml
+    │   └── vars
+    │       └── main.yml
+    └── git
+        ├── README.md
+        ├── tasks
+        │   └── main.yml
+        ├── templates
+        │   └── docker-compose.yml.j2
+        └── vars
+            └── main.yml
 ```
 
-This is a sample `.ideavimrc` file which I used for the month. A lot of the settings I found myself wanting to tweak
-could be done through the menus in the editor itself. Which at times, proved to be rather difficult.
+File paths will be provided at each step, if you are following along, you can use the structure above to create
+an exact copy. **RECOMMENDED!**
 
-## Disclaimer
-The following sections will review my findings and the results of this experiment. Keep in mind, anything I say is 
-100% my own opinion, and every user will likely have a different experience. Nothing here is **fact** just simply
-how I feel about each tool.
+<br>
 
-## What is Missing 
-After using the JetBrains products for a month, I have noticed a few things that were missing that made my development
-experience slightly more cumbersome. For example, I did not find a very good way to search for files, options like
-**class search** or **symbol search** are powerful, but sometimes I want to search for a file or navigate quickly between
-files. I was not able to find this functionality using the default tooling in the Idea products. 
+## Install Docker Compose
 
-Another thing I was not a huge fan of is the `.idea` directory that is created in the root of each project. This is a small
-complaint, but in large projects, it can create more bloat in the source. Many times I experienced issues with files 
-loading properly due to a corrupted `.idea` directory. Or even times when the files would get hidden in my source tree due
-to an issue in the editor config. I don't love that the editor requires setup for each project, similar to the `.vs` 
-directory from [Visual Studio Code](https://code.visualstudio.com).
+The first requirement is to ensure that docker compose is installed. This can be done by updating the 
+`roles/docker/tasks/main.yml` file to contain the following task.
 
-Finally, the biggest issue I noticed was the LSP and syntax highlighting was very slow and at times would crash. At 
-times, I would have to stop working and wait for my editor to "catch up" and highlight my code or generate LSP completions.
-I often found myself having to close a file and open it again to get the syntax highlighting to function again. Which 
-I have never had to deal with in Neovim. Furthermore, in multi-language projects, the tools struggle pretty badly too, 
-due to the single language nature of the tools. Of course, there are solutions to this problem through plugins, but 
-throughout this experience I did not install them as mentioned previously.
+```yaml
+# roles/docker/tasks/main.yml
 
-## What JetBrains Does Better
-Of course, the JetBrains suite is industry grade software, which comes along with lots of powerful built-in tools. Such
-as Git integration. The source control integration is exceptional and allows for easy switching between branches using their
-**smart checkout** feature. There were times when I still needed to pull out the command line to solve complex git issues,
-but for the most part, the UI/UX was good and fairly easy to learn. I also really liked that `// TODO: ...` comments were
-highlighted to stand out and when commits containing TODOS were created, a notification was pushed to the user. Small 
-things like this really help the tools stand out and feel user-friendly.
+...
 
-Other features like the LSP and syntax highlighting are installed out of the box. This is a huge win for those who do not
-want to spend hours configuring their system and tools before working. However, that is *exactly* who I am, so this was 
-not a huge benefit to me, but it definitely made the migration much faster. Another smaller feature that can be included
-in that list is the **markdown previewer**, which was a nice feature to see. Most modern editors have this feature, so I 
-am sure this is nothing new, but vim is not able to achieve this functionality natively.
+- name: Install Docker Compose
+  get_url:
+    url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 # Modify system accordingly
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  become: true
+  tags:
+    - docker
+    - compose
+```
 
-Finally, the last feature I really enjoyed was the project sessionizer. The ability to switch between projects with the 
-click of a button is amazing. However, I did not find myself using it very often. Usually, the only time I needed to use
-it was when I first opened the editor and had to select or create a project.
+Also, make sure you have a working installation of Docker on your system. Those not using Ansible can reference
+the [docs](https://docs.docker.com/compose/install/) which provide a distro-specific installation guide.
 
-## The Verdict
-So what was the point of this whole thing? Firstly, I need to be able to tell other people **why I use Neovim vs. other
-editors.** Jokes aside, there is a real reason. It was pointed out to me that maybe I am handicapping myself or missing
-out on tools that might help my development workflow. I try not to disregard things that I haven't used, and since I 
-haven't used an editor that isn't Neovim in **years**, I thought it was only fair I give them a chance.
+You can test that this has worked successfully by running the docker compose command:
 
-During this month of JetBrains, I learned a lot about what I like and what I don't like. For example, I still work best
-with keyboard driven workflows and prefer TUI ([Terminal User Interface](https://en.wikipedia.org/wiki/Text-based_user_interface))
-over a GUI (Graphical User Interface). Having to reach between the mouse and keyboard was a driving reason that I switched
-to Neovim in the first place, and I still believe it is a strong argument for the tool. However, sometimes preference is
-not enough when the tooling is **objectively better.**
+```bash
+docker-compose --version
+```
 
-In my experience, I have narrowed the editors down into two categories: **Worth the pain** and **just not strong enough.**
+<br>
 
-#### Worth the Pain
-- **[Rider](https://www.jetbrains.com/rider/)** for C# development
-- **[Clion](https://www.jetbrains.com/clion/)** for large C/C++ projects with CMake
-- **[IntelliJ](https://www.jetbrains.com/idea/)** for Java development
+## Create the Git User
 
-#### Just Not Strong Enough
-- **[GoLand](https://www.jetbrains.com/go/)** for Go development
-- **[WebStorm](https://www.jetbrains.com/webstorm/)** for web development
-- **[PyCharm](https://www.jetbrains.com/pycharm/)** for python development
+Now its time to create the user that will handle the server and manage the data. It is best practice to create 
+a new user with permission only for this application, to follow the [principal of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege). This can 
+be done very easily by updating the `roles/git/tasks/main.yml` file to contain the following tasks:
 
-You may notice that *every* JetBrains product was not listed above. That is simply because I did not use every single one.
-I have never once found a need to write PHP code and therefore, did not use the PhpStorm editor. It would be unfair to 
-try and rate products I have never used. So why did I rate each of these editors the way I did? I have a simple 
-guideline: **language complexity.** Languages Python or JavaScript are simple enough (syntax wise) that I do not feel the 
-need to have such powerful tools. The editors placed in the "Just Not Strong Enough" categories do not provide enough help 
-to me to outweigh the lack of preference. Go is also a fairly simple language with very little 
-"[syntactic sugar](https://en.wikipedia.org/wiki/Syntactic_sugar)." In addition, lots of programming experience is in Go,
-so I have no problem writing an application start to finish without the need for complicated tooling.
+```yaml
+# roles/git/tasks/main.yml
 
-How about the three in the "Worth the Pain" category? Languages like C# and Java are (in my opinion) a complex language 
-with features that really benefit from powerful tools. In my experience, [object-oriented](https://en.wikipedia.org/wiki/Object-oriented_programming)
-programming languages are the hardest to develop with poor tooling. The power that Rider specifically provides in a huge
-C# codebase is unrivaled. This [survey](https://www.jrebel.com/blog/best-java-ide) from 2024-2025 says that IntelliJ IDEA 
-is the most popular editor among developers for the Java programming language. So I guess it's safe to say I am not the 
-only one who feels this way!
+...
 
->
-> IntelliJ IDEA has firmly held the top spot over that timespan, with the Java IDE's popularity only increasing from 71% to 84%.
-> 
+- name: Create git user
+  user:
+    name: git
+    password: "{{ GIT_USER_PASSWORD }}"
+    shell: /bin/bash
+    state: present
+  become: true
+  tags:
+    - git
+    - user
 
-The last editor on the list is Clion. The reason I added Clion to the "Worth the Pain" list is simply because I am bad
-at writing C. I know, hard to believe, but I actually don't know how to use CMake and really don't want to learn. So for
-projects that require dependencies, I really struggle to compile and run the program. Clion abstracts a lot of the hardship
-involved with packaging and compiling C programs which is why I will likely continue to use it for projects with many 
-dependencies.
+- name: Add git user to the required groups
+  user:
+    name: git
+    groups: sudo,docker
+    append: yes
+    state: present
+  become: true
+  tags:
+    - git
+    - groups
+```
 
-## JetBrain > Neovim?
-So after all of that, will I continue using Neovim for everything I do, or will I strictly use JetBrains products? I hope
-that after reading the previous section, you will know the answer. I am looking forward to jumping back into Neovim and 
-getting work done with "blazing speed," but I now understand that sometimes a full-fledged IDE is just the better option.
+The password can be set directly here, or you can update the `roles/git/vars/main.yml` file to contain an entry
+for the password. Ansible knows to look here when we use the syntax provided above.
 
-I hope that reading this will shed some light on some of the bias many programmers develop over time. Maybe even inspire
-you to try something new, even if its only for a month, or even a week! You might love it! Or at the very worst, you might
-learn something.
+```yaml
+# roles/git/vars/main.yml
+
+...
+
+GIT_USER_PASSWORD: "super secret password" # use `mkpasswd -m sha-512 'password'`
+```
+
+For non Ansible users, this can be done with the typical Linux commands:
+
+```bash
+useradd -m -s /bin/bash git
+passwd git
+
+usermod -aG sudo git
+usermod -aG docker git
+```
+
+<br>
+
+## Configure Docker Compose
+We will now create the required docker-compose file to start the application. The file should be placed in the 
+new *git* users home directory, `/home/git/docker-compose.yml`. This can be done with a single task in the same
+playbook as previous.
+
+```yaml
+# roles/git/tasks/main.yml
+
+...
+
+- name: Copy docker-compose file to the server
+  template:
+    src: docker-compose.yml.j2
+    dest: /home/git/docker-compose.yml
+    owner: git
+    group: git
+    mode: "0644"
+  become: true
+  tags:
+    - git
+    - docker
+```
+
+In order for this to work, we must also provide the `docker-compose.yml.j2` file in the `templates` directory.
+
+```yaml
+# roles/git/templates/docker-compose.yml.j2
+
+networks:
+  gitea:
+    external: false
+
+services:
+  server:
+    image: docker.gitea.com/gitea:1.23.8
+    container_name: gitea
+    environment:
+      - USER=git
+      - USER_UID=1001 # As the git user, run `id` to get UID and GID values
+      - USER_GID=1002
+    restart: always   # Allows the container to start when the server boots
+    networks:
+      - gitea
+    volumes:
+      - ./gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "4000:3000"
+      - "222:22"      # Adjust the host ports as necessary, host:container
+```
+
+To do this manually, simply create a file `/home/git/docker-compose.yml` with the content in the above template.
+
+## Configure the Server
+
+We will use the Gitea web-UI to configure the server, but first we must start the server. With ansible, we can 
+create the following task in the same location as the previous tasks (starting to notice a trend I hope).
+
+```yaml
+# roles/git/tasks/main.yml
+
+...
+
+- name: Start Docker compose application
+  community.docker.docker_compose_v2:
+    files: /home/git/docker-compose.yml
+    project_src: /home/git
+    state: present
+    pull: always
+  become: true
+  tags:
+    - git
+    - start
+```
+
+Or you can run the docker compose command from the git users home directory `/home/git`:
+
+```bash
+docker-compose up -d # Use -d if you want it to run in the background, as a daemon
+```
+
+Now you can access our server locally using the local address of your server on port 4000 (or whatever you set 
+in the docker compose file). For example, `http://192.168.1.2:4000`. You should see a configuration wizard, if 
+so, you are almost done!
+
+Feel free to customize these settings as you see fit, but ensure you follow the provided directions.
+
+- Do not change the port's, HTTP or SSH, these are internal ports! To change the external ports, update the hosts
+ports in the docker container.
+- Leave the user as git, we set this up for a reason!
+- Disable the **self registration** toggle in the advanced settings section (at the bottom).
+
+<br>
+
+## Configure Local Access
+
+Your Git server is live! You have made it through the hardest part, the rest is easy. Access your server via HTTP
+works but it's not the best but it works. So, now we will configure our local system to use [SSH key authentication](https://www.digitalocean.com/community/tutorials/how-to-configure-ssh-key-based-authentication-on-a-linux-server).
+First you will need an SSH key, but I will leave that up to you to figure out.
+
+Once you have your key, you need to add it to your Gitea server. The process is very similar to added an SSH key to 
+GitHub, **Settings > SSH/GPG Keys > Add Key**. Then paste the content of your `*.pub` file into the content field.
+
+Finally, we need to configure our local machine to use this key when we access our Git server. Update your `.gitconfig`
+file to contain an entry similar to this:
+
+```sshconfig
+Host gitea # Update as needed
+  Port 222 # Update as needed
+  User git
+  HostName 192.168.1.2 # Use your address here, we will change this later
+  IdentityFile ~/.ssh/key
+```
+
+Much of these details will change when we setup our server to run on our domain, but for now, give them a try 
+and adjust them accordingly.
+
+When you attempt to clone a repo (for example) you will use the URL: 
+
+```bash
+git clone git@gitea:<username>/<repo>.git
+```
+
+Notice, we use **gitea** here as the host. Since this is how we configured our config to route to our server.
+
+<br>
+
+#### Side Note: Local Access
+
+If you would only like access to this server from your local network then you can stop at this step. 
+
+<br>
+
+## Configure Remote Access
+
+We will be using an existing **Cloudflare tunnel**, but I will not go into detail about setting one 
+up. It is a pretty simple process that can be done without too much explanation. So, I will assume
+you have a tunnel up and running. All we have to do, is route an endpoint from our local machine
+to sub domain in our Cloudflare tunnel. By now, this should be easy for you, since you have setup
+and configured your tunnel already (hopefully). But to remind you, you must add a record to your 
+`config.yml` file, wherever it is on your system.
+
+```yaml
+...
+
+ingress:
+    - hostname: git.domain.net       # Enter your domain here
+      service: http://localhost:4000 # Update the port as needed
+    ...
+```
+
+But that is not all, the last step you need to do is add a [CNAME record](https://en.wikipedia.org/wiki/CNAME_record) in your Cloudflare 
+DNS dashboard. This can be done manually, like you have before, or by creating an Ansible task
+as follows. This will be its own role, `cloudflared`
+
+```yaml
+# roles/cloudflared/tasks/main.yml
+
+...
+# Update domain to your own
+    
+- name: Configure cloudflare Tunnel DNS Record (CNAMEs) for *.domain.net
+  community.general.cloudflare_dns:
+    zone: "domain.net"
+    record: "{{ item }}.domain.net"
+    type: "CNAME"
+    value: "{{ tunnel_id }}.cfargotunnel.com"
+    state: present
+    proxied: true
+    api_token: "{{ cloudflare_api_key }}"
+  loop: "{{ domain_cnames }}"
+  tags:
+    - cloudflared
+    - cnames
+```
+
+Like in the previous steps, we will need some variables in our `roles/cloudflared/vars/main.yml` file.
+
+```yaml
+
+...
+
+tunnel_id: "tunnel_id"        # Enter your tunnel id here
+cloudflare_api_key: "api_key" # Enter your API key here
+
+# Include as many sub domains as you want, for now, we just need git
+gophernest_cnames:
+  - git               
+  - ...
+```
+
+You may notice, we are using an API key. This is a free and simple process which is described [here](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/)
+in the Cloudflare docs. The key will allow us to update DNS records using their API.
+
+Now, you will be able to access the web interface of your git server at *git.yourdomain.net*! However, 
+we cannot use this domain with SSH to complete actions, such as cloning. At this state, you can clone
+(or do other actions) using a URL that looks like this:
+
+```bash
+git clone git@your_servers_ip:username/repo.git
+```
+
+*NOTE: Tunneling TCP or UDP is more complex and will not be apart of this guide.*
+
+But this is not ideal, nobody wants to use their server IP address to access their git server! So, what
+can we do? Well, the best option is to simply use a DNS the *old* way. In your Cloudflare DNS panel, 
+create an **A** entry with a value of whatever subdomain you want (we will need this later) and
+the content being your servers IP address. For this record, make sure to *deselect* the proxied 
+check box. What this will do is route the traffic from **subdomain.domain.net** to the IP address.
+
+But why do we need that? Having a route will allow us to configure our SSH config to use this URL and 
+access our git server via SSH without much effort. Update the previous record we created in our `~/.ssh/config` 
+file to look more like this:
+
+```sshconfig
+Host gitea # Remeber this value!
+  Port 222
+  User git
+  HostName subdomain.domain.net # This is the only change
+  IdentityFile ~/.ssh/key
+```
+
+You should now be able to complete SSH actions using the **gitea** domain! An example would look like this:
+
+```bash
+git clone git@gitea:username/repo.git
+```
+
+Simple right! We are just about done, the last thing we need to do is update our Gitea config to use this 
+new route in the frontend. You may notice that your web UI will provide a different value when you press 
+clone on a repo (for example). To fix this, all you need to do edit your config file at 
+`/home/git/gitea/gitea/conf/app.ini`. You will replace the line starting with `SSH_DOMAIN` to match whatever
+value you labeled your SSH key to use.
+
+For example:
+
+```ini
+[server]
+...
+SSH_DOMAIN = gitea
+```
+
+You may also edit any other domain values you see to match your own domain. These values will update the 
+text fields that are provided to the user when actions are taken. After restarting the docker compose image
+you will see the updates live!
+
+For those using Ansible, this config change can be done using a simple task added to your `roles/git/tasks/main.yml`
+file.
+
+```yaml
+# roles/git/tasks/main.yml
+
+...
+
+- name: Update the ssh domain in the config file if it exists
+  replace:
+    path: /home/git/gitea/gitea/conf/app.ini
+    regexp: '^SSH_DOMAIN = (.*)'
+    replace: 'SSH_DOMAIN = gitea'
+  become: true
+  tags:
+    - git
+    - config
+```
+
+*NOTE: I have also found it helpful to append this new task to the bottom of the **git** role as a safety measure.*
+
+```yaml
+# roles/git/tasks/main.yml
+
+...
+
+- name: Restart Docker compose application
+  community.docker.docker_compose_v2:
+    files: /home/git/docker-compose.yml
+    project_src: /home/git
+    state: restarted
+    pull: always
+  become: true
+  tags:
+    - git
+    - restart
+```
+
+This will ensure the application is in its most recent state after each update.
+
+
+## Conclusion
+
+You now have your own version control server running in your home server! This solution should not replace 
+GitHub in your workflow, some projects belong in the public eye. Your favorite projects are a great way for
+future employers to see what kind of things you can do! But some things, like your Ansible config files, or 
+your NixOS configuration, does not need to be public. Your home git server is a great place for those projects!
+Just remember to make them private repos in Gitea ;)
