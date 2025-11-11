@@ -123,11 +123,13 @@ private:
   std::unique_ptr<Node> ParseHeading();
   std::unique_ptr<Node> ParseList(bool ordered);
   std::unique_ptr<Node> ParseCodeBlock();
+  std::unique_ptr<Node> ParseBlockQuote();
   vector<std::unique_ptr<Node>> ParseInline();
 
   // The only differences are the exit condition
   vector<std::unique_ptr<Node>> ParseInlineHeading();
   std::unique_ptr<Node> ParseInlineListContent();
+  vector<std::unique_ptr<Node>> ParseInlineBlockQuote();
 
   void PushTextNode(vector<std::unique_ptr<Node>> &nodes, string &str);
 

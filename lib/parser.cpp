@@ -8,6 +8,13 @@
 #include <memory>
 #include <string>
 
+//
+// Please please PLEASSSEEEE ignore the "wetness" of this...
+// The architecture is under construction...
+//
+// wetness means not DRY, I just made it up :)
+//
+
 using std::string;
 using std::vector;
 
@@ -103,7 +110,12 @@ std::unique_ptr<Node> Parser::ParseBlock() {
     return ParseImage();
   }
 
-  // 6. Parser paragraph
+  // 6. Parse block quote
+  if (c == '>') {
+    return ParseBlockQuote();
+  }
+
+  // 7. Parser paragraph
   return ParseParagraph();
 }
 
@@ -200,6 +212,24 @@ std::unique_ptr<Node> Parser::ParseList(bool ordered) {
 
   return node;
 };
+
+std::unique_ptr<Node> Parser::ParseBlockQuote() {
+  auto node = std::make_unique<BlockQuoteNode>();
+
+  char c = Peek();
+  while (c == '>') {
+    Consume();           // Consume the '>' character
+    ConsumeWhiteSpace(); // Consume whitespace
+    c = Peek();
+  }
+
+  auto children = ParseInlineBlockQuote();
+  for (auto &child : children) {
+    node->AddChild(std::move(child));
+  }
+
+  return node;
+}
 
 std::unique_ptr<Node> Parser::ParseCodeBlock() {
   auto node = std::make_unique<CodeBlockNode>();
@@ -453,6 +483,81 @@ std::unique_ptr<Node> Parser::ParseInlineListContent() {
   }
 
   return element;
+}
+
+vector<std::unique_ptr<Node>> Parser::ParseInlineBlockQuote() {
+  vector<std::unique_ptr<Node>> nodes;
+  string str;
+
+  while (!IsEOF()) {
+    char c = Peek();
+    char c_next = Peek(1);
+
+    if (c == '\n') {
+      if (c_next == '\n')
+        break;
+
+      Consume(); // consume the '\n'
+
+      if (Peek() == '>') {
+        Consume(); // consume the '>'
+        str += " ";
+        continue;
+      }
+    }
+
+    if (c == '!' && c_next == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseImage();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '[') {
+      PushTextNode(nodes, str);
+      auto node = ParseLink();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '*' && Peek(1) == '*' && Peek(2) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBoldItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*' && Peek(1) == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseBold();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    } else if (c == '*') {
+      PushTextNode(nodes, str);
+      auto node = ParseItalic();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    if (c == '`') {
+      PushTextNode(nodes, str);
+      auto node = ParseCode();
+      if (!node->IsEmpty())
+        nodes.push_back(std::move(node));
+      continue;
+    }
+
+    // If a newline, use a space instead
+    str += (c == '\n' ? ' ' : c); // TODO: Maybe we don't need this...?
+    Consume();
+  }
+
+  // Push the last node, if the string is not empty
+  PushTextNode(nodes, str);
+  return nodes;
 }
 
 std::unique_ptr<Node> Parser::ParseItalic() {

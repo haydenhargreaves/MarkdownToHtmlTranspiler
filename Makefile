@@ -40,7 +40,7 @@ $(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ -pie
 
 test: all
-	./$(TARGET) test/journal.md -o output.html
+	./$(TARGET) test/input.md -o output.html
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)

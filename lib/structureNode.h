@@ -143,4 +143,9 @@ public:
   std::string ToHtml() const;
 };
 
+class BlockQuoteNode : public StructureNode {
+public:
+  std::string ToHtml() const;
+};
+
 #endif
