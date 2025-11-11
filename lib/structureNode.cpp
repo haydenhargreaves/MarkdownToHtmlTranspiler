@@ -99,3 +99,15 @@ string ImageNode::ToHtml() const {
   ss << "<img src=\"" << this->src << "\" alt=\"" << this->alt << "\" />\n";
   return ss.str();
 }
+
+string BlockQuoteNode::ToHtml() const {
+  std::stringstream ss;
+
+  ss << "<blockquote>";
+  for (const auto &child : this->GetChilren()) {
+    ss << *child;
+  }
+
+  ss << "</blockquote>\n";
+  return ss.str();
+}
