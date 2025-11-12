@@ -1,504 +1,291 @@
-Date: 2025/05/22
-Desc: Rolling your own version control is not as hard as it sounds. This step by step guide will take you from 0 to 60!
+# What is a Functional Programming Language: Featuring Elixir
 
-# Self Hosted Git Server: How to
-
-![Gitea Logo](https://hhargreaves.net/journal/gitea-logo.png)
+![Jet Brains Logo](https://hhargreaves.net/journal/elixir-logo.png)
 
 <br>
 
 ###### Author: Hayden Hargreaves
-###### Published: 05/22/2025
+
+###### Published: 05/21/2025
 
 ## Background
 
-Version control is one of the most powerful tools used by developers, and Git is the most widely adopted **version control system** (vcs). However, when it comes to hosting Git, everyone does it a 
-little differently. Most people use **[GitHub](https://github.com)** or even [GitLab](https://about.gitlab.com). Large companies typically host their
-own for an added layer of safety and security. That is exactly what this guide will cover, but on a smaller
-scale of course!
+Many programmers tend to avoid **functional programming** due to its perceived complexity, myself included.
+But is functional programming really that much more complex? My goal is to break my fear of functional 
+programming, [monads](https://en.wikipedia.org/wiki/Monad_(functional_programming)), [functors](https://en.wikipedia.org/wiki/Functor), and all those *scary* terms frequently tossed around in the functional
+space.
 
-Before we dig into the details, what exactly does it mean to *"roll your own version control"* or *"host
-your own git server"*? Well, it's simple, we are going to use a server of our own to deploy an application
-that serves as a web-UI and *hub* for our Git repositories. Before you freak out, we are not going to 
-actually write any code or build the application, there are countless open-source options available for 
-**free** that "home-labbers" such as myself. In this guide, we will be using [Gitea](https://about.gitea.com) due to its ease of use
-and strong support. 
+How am I going to do this? Well, I am definitely not going to start with [Haskell](https://www.haskell.org). For those who have 
+never seen or heard of Haskell, this decision might be hard to understand. I will not explain myself too 
+much. But I will provide a code snippet from the Haskell docs and let you decide if it a worthy language
+for someone who has never written a line of functional code in their life.
 
-*NOTE: As an added benefit, it was written in Go and is accepting contributions!*
-
-## Requirements
-
-There are only a few things you will need to roll your own Git server. The most important is a server, duh!
-This can be a virtual private server (VPS), an EC2 instance from AWS, or your own hardware. Whatever you have 
-will work, but my recommendation is to purchase your own hardware. I have a large server built of old gaming 
-PC parts, but even a simple [Raspberry Pi](https://www.raspberrypi.com) will due! 
-
-Once you have a server and root access (you will need to create and modify a user) you are about 99% there!
-I assume that because you are reading this you have a personal computer. You will need SSH access to your 
-server via a personal computer. This article will walk you through using **[Ansible](https://docs.ansible.com)** to configure your
-server (which requires SSH access). **This guide assumes you are using a Debian or Ubuntu based Linux distro.**
-
-Finally, the last "requirement" is optional, but highly recommended: a personal domain and a [Cloudflare](https://www.cloudflare.com) 
-account. Regardless of whether you have a domain or not, you will be able to access your Git server from 
-your local network. But, if you want access remotely securely, it is best to get your hands on a domain.
-Using Cloudflare allows us access to their [tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/) which will allow us to expose local ports safely.
-More details regarding these tunnels will come later.
-
-*NOTE: There are other ways to access your server remotely without Cloudflare tunnels, but I will not cover that here.*
-
-## Preview
-
-Before continuing, please make sure you have everything you need to get started. Following these steps, 
-**in order** will allow you to go from 0 to self hosting your server with relative ease!
-
-1. **Install docker-compose:** We will be running the server in a docker container
-2. **Create the *git* user:** Creating a new user will allow you to access the server using the git user
-3. **Configure docker-compose:** This is the easiest way to install Gitea
-4. **Configure the server:** The server can be configured via the web UI
-5. **Configure SSH access:** The magic begins to happen here
-6. **Configure remote access:** This is the final step that ties the bow on the whole system
-
-
-### Disclaimer
-
-It is assumed that you already have a basic understanding of Ansible and have a basic config setup. As this
-is not an Ansible guide, I will not go into much detail there. However, many of these commands are easy to 
-understand and can be used as normal shell commands.
-
-For those who have ansible already configured on their system, we will be using the common **roles** pattern for
-directories and files. A directory structure that looks something like this will yield the best results: 
-
-```bash
-
-.
-├── ansible.cfg
-├── inventory
-│   ├── group_vars
-│   │   └── main.yml
-│   ├── hosts.yml
-│   └── host_vars
-│       └── gophernest.yml
-├── playbooks
-│   ├── common_setup.yml
-│   └── docker_apps.yml
-├── requirements.yml
-└── roles
-    ├── cloudflared
-    │   ├── files
-    │   │   ├── 3c522d3a-5f24-4645-b4ca-695c66e05ef3.json
-    │   │   ├── cert.pem
-    │   │   └── cloudflared
-    │   ├── handlers
-    │   │   └── main.yml
-    │   ├── tasks
-    │   │   └── main.yml
-    │   ├── templates
-    │   │   └── config.yml.j2
-    │   └── vars
-    │       └── main.yml
-    ├── docker
-    │   ├── handlers
-    │   │   └── main.yml
-    │   ├── tasks
-    │   │   └── main.yml
-    │   └── vars
-    │       └── main.yml
-    └── git
-        ├── README.md
-        ├── tasks
-        │   └── main.yml
-        ├── templates
-        │   └── docker-compose.yml.j2
-        └── vars
-            └── main.yml
+```haskell
+primes = filterPrime [2..] where
+  filterPrime (p:xs) =
+    p : filterPrime [x | x <- xs, x `mod` p /= 0]
 ```
 
-File paths will be provided at each step, if you are following along, you can use the structure above to create
-an exact copy. **RECOMMENDED!**
+Personally, the Haskell language is far too esoteric for my liking. Eventually, I would love to be able 
+to, at the very least, **read** Haskell code, but not yet. So this put me a spot to select from a large
+selection of languages. I did not want to use a language like **Python** or **JavaScript** which can be 
+written to *seem* functional. No, I wanted to write a **real** functional language. A common list of as 
+follows:
+
+- [Haskell](https://www.haskell.org)
+- [Erlang](https://www.erlang.org)
+- [Elixir](https://elixir-lang.org)
+- [Scala](https://www.scala-lang.org)
+- [Clojure](https://clojure.org)
+- [OCaml](https://ocaml.org)
+- [Common Lisp](https://lisp-lang.org)
+
+To avoid offending all of the "functional bros" I will not explain my thought process much. However, I 
+will mention that I tried to learn **OCaml** a years ago and could not enjoy it. Maybe that was because I 
+was not as advanced as I am today, or maybe I did not have the proper mindset. Regardless, that ruled 
+out OCaml. I have no experience in any of the other languages, so I did what most would do. I let Reddit
+decide! The [Elixir](https://www.reddit.com/r/elixir/) Reddit page was very informative as well as providing me with a link to the 
+[2024 Stack Overflow Survey](https://survey.stackoverflow.co/2024/technology#top-paying-technologies) which described Erlang and Elixir as the top two paying languages. 
+
+With that out of the way, lets talk more about what functional programming is.
+
+## What is Functional Programming
+
+At the most basic level, functional programming is defined as a ["programming paradigm where programs are 
+constructed by applying and composing functions"](https://en.wikipedia.org/wiki/Functional_programming). In laymen terms, a majority of the code written in these
+languages is just functions. Everything can be expressed as some composition of functions. For this reason,
+a strong understanding of mathematics can be hugely beneficial to functional programmers.
+
+>
+> "Functional programming evolved from lambda calculus"
+>
+
+#### Pure Functions
+
+Another key difference between other paradigms is the strict immutability. Functional programming introduces 
+the term "[pure function](https://en.wikipedia.org/wiki/Pure_function)" which is any function that can be run (any amount of times) and will always produce
+the same output, **and cannot be affected by (or affect) any mutable state.** The intention of writing pure 
+functions is to prevent [side effects](https://en.wikipedia.org/wiki/Side_effect_(computer_science)), "any observable effect other than its primary purpose."
+
+To simplify, the two properties of a **pure** function are:
+
+1) The function will return an identical result for identical arguments. With ***no*** variation for any reason, 
+including reference arguments.
+2) The function has no *side effects*, no mutation of local static variables, non-local variables, etc.)
+
+An example of a pure function in C++ may look as follows:
+
+```c++
+void f() {
+    static std::atomic<unsigned int> x = 0;
+    ++x;
+}
+```
+
+The function `f()` is pure because it follows the above properties.
+
+```c++
+int f_i() {
+    static int x = 0;
+    ++x;
+    return x;
+}
+```
+
+However, the function `f_i()` is impure because it returns a variation of a static variable.
+
+Countless more examples of impure functions can be found [here](https://en.wikipedia.org/wiki/Pure_function#Impure_functions).
+
+**NOTE:** I wanted to write these examples in Elixir, but due to its functional nature, it would be very hard.
 
 <br>
 
-## Install Docker Compose
+#### Functions are First Class Citizens
 
-The first requirement is to ensure that docker compose is installed. This can be done by updating the 
-`roles/docker/tasks/main.yml` file to contain the following task.
-
-```yaml
-# roles/docker/tasks/main.yml
-
-...
-
-- name: Install Docker Compose
-  get_url:
-    url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 # Modify system accordingly
-    dest: /usr/local/bin/docker-compose
-    mode: '0755'
-  become: true
-  tags:
-    - docker
-    - compose
-```
-
-Also, make sure you have a working installation of Docker on your system. Those not using Ansible can reference
-the [docs](https://docs.docker.com/compose/install/) which provide a distro-specific installation guide.
-
-You can test that this has worked successfully by running the docker compose command:
-
-```bash
-docker-compose --version
-```
+Another key property of functional programming is that functions are known as [first class citizens](https://en.wikipedia.org/wiki/First-class_citizen) which 
+means they can be assigned to variables, passed into other functions as arguments ([higher order functions](https://en.wikipedia.org/wiki/Higher-order_function))
+and returned from functions. This is not uncommon in modern programming languages so I will not provide an 
+in-depth explanation.
 
 <br>
 
-## Create the Git User
+#### Recursion
 
-Now its time to create the user that will handle the server and manage the data. It is best practice to create 
-a new user with permission only for this application, to follow the [principal of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege). This can 
-be done very easily by updating the `roles/git/tasks/main.yml` file to contain the following tasks:
+The death of many modern programming languages, recursion, is one of the many strengths of functional languages.
+[Recursion](https://en.wikipedia.org/wiki/Recursion_(computer_science)) occurs when a functions calls itself. This is the most common way to implement [iteration](https://en.wikipedia.org/wiki/Iteration) in 
+functional programming. For example a simple loop in any common procedural language:
 
-```yaml
-# roles/git/tasks/main.yml
+```c++
+std::vector<int> numbers = {1, 2, 4, 8, 16};
 
-...
-
-- name: Create git user
-  user:
-    name: git
-    password: "{{ GIT_USER_PASSWORD }}"
-    shell: /bin/bash
-    state: present
-  become: true
-  tags:
-    - git
-    - user
-
-- name: Add git user to the required groups
-  user:
-    name: git
-    groups: sudo,docker
-    append: yes
-    state: present
-  become: true
-  tags:
-    - git
-    - groups
+for (size_t i = 0; i < numbers.size(); i++) {
+    std::cout << numbers[i] << " ";
+}
 ```
 
-The password can be set directly here, or you can update the `roles/git/vars/main.yml` file to contain an entry
-for the password. Ansible knows to look here when we use the syntax provided above.
+Can be written in a similar way using recursion with Elixir:
 
-```yaml
-# roles/git/vars/main.yml
+```Elixir
+def print_list([]), do: IO.puts("") # Base case: when the list is empty, this function is called
 
-...
-
-GIT_USER_PASSWORD: "super secret password" # use `mkpasswd -m sha-512 'password'`
+def print_list([head | tail]) do
+    IO.puts(head)      # Print the first element in the list (head)
+    print_list(tail)   # Call the function again with the remaining elements
+end
 ```
 
-For non Ansible users, this can be done with the typical Linux commands:
+Programmers coming from other languages might freak when they see so much recursion, and it is not wrong to 
+worry. In procedural languages, recursion requires the stack to keep a record of each function call, and when
+recursion is used to extreme levels, the stack becomes very large and uses lots of memory. Not very efficient!
+However, functional programming languages found a solution, [tail recursion](https://en.wikipedia.org/wiki/Tail_call). Tail recursion allows the compiler
+to creation a subroutine which represents the final action (final function call) and place it onto the stack, 
+allowing the program to jump right to the end without having to store the entire recursive loop in stack memory.
+This reduces the memory stack space from linear or O(N) to constant or O(1). A huge performance increases in 
+recursive programs.
 
-```bash
-useradd -m -s /bin/bash git
-passwd git
+<br>
 
-usermod -aG sudo git
-usermod -aG docker git
+#### Strict vs. Non-Strict Evaluation
+
+Functional languages can be categorized by *strict (eager)* or *non-strict (lazy)* evaluation. The different 
+evaluation styles refer to how arguments are processed inside an expression under evaluation. This concept 
+is quite complex and this overview does not warrant the necessity for such details. However, a simple example
+can explain (on a higher level) the difference. **"Under strict evaluation, the evaluation of any term containing
+a failing subterm fails.** An example makes this a bit easier to understand. We will use the same example to described
+both evaluation types.
+
+```
+print length([2+1, 3*2, 1/0, 5-4])
+```
+
+In a language categorized as *strict*, the expression above will fail, due to the term `1/0` failing. However, in a language
+with *non-strict* evaluation, the length expression will return 4 because it does attempt to evaluate the subterms, which
+result in failure.
+
+To summarize, *lazy* evaluation does not attempt to evaluate function arguments unless their values are required for the 
+function call itself.
+
+***NOTE: Elixir is a strictly evaluated language.***
+
+<br>
+
+#### Referential Transparency
+
+Another very detailed differentiation from imperative programming languages. [Referential transparency](https://en.wikipedia.org/wiki/Referential_transparency) stems from linguistic 
+roots and language by extension. Applications in this context (computer science) states that "a language is *referentially
+transparent* when an expression built from another, replaces the expression with a subexpression which represents the same value
+and does not change the value of the expression." That sounds very complicated, and it is, but to be simple, expressions cannot 
+be modified, only replaced. 
+
+Functional programming languages do not have **assignment statements**, because a value can never be changed once it is defined.
+This is a result of the language allowing variables to be swapped with their value at any time. Therefore, functional languages
+are referentially transparent.
+
+Another example will make this easier to understand. Consider the following assignment statement from [C](https://en.wikipedia.org/wiki/C_(programming_language)). This assignment changes
+the value assigned to the variable `x`. If the initial value of `x` was to be `1`, the result would be `10`. But when called again, the 
+result would be `100`. Since replacing `x` with `10` or `100` gives the program different meaning, it is not *referentially transparent.*
+
+```c
+x = x * 10
+```
+
+However, consider the following elixir function, `f(x)`. This implementation is *transparent*, as it does not modify the value of x,
+which results in the absence of **side effects**. Instead, it returns a value which can be used to replace an existing value. This
+is the standard in functional languages which results in their referential nature.
+
+```elixir
+def f(x) do
+    x + 1
+end
 ```
 
 <br>
 
-## Configure Docker Compose
-We will now create the required docker-compose file to start the application. The file should be placed in the 
-new *git* users home directory, `/home/git/docker-compose.yml`. This can be done with a single task in the same
-playbook as previous.
-
-```yaml
-# roles/git/tasks/main.yml
-
-...
-
-- name: Copy docker-compose file to the server
-  template:
-    src: docker-compose.yml.j2
-    dest: /home/git/docker-compose.yml
-    owner: git
-    group: git
-    mode: "0644"
-  become: true
-  tags:
-    - git
-    - docker
-```
-
-In order for this to work, we must also provide the `docker-compose.yml.j2` file in the `templates` directory.
-
-```yaml
-# roles/git/templates/docker-compose.yml.j2
-
-networks:
-  gitea:
-    external: false
-
-services:
-  server:
-    image: docker.gitea.com/gitea:1.23.8
-    container_name: gitea
-    environment:
-      - USER=git
-      - USER_UID=1001 # As the git user, run `id` to get UID and GID values
-      - USER_GID=1002
-    restart: always   # Allows the container to start when the server boots
-    networks:
-      - gitea
-    volumes:
-      - ./gitea:/data
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "4000:3000"
-      - "222:22"      # Adjust the host ports as necessary, host:container
-```
-
-To do this manually, simply create a file `/home/git/docker-compose.yml` with the content in the above template.
-
-## Configure the Server
-
-We will use the Gitea web-UI to configure the server, but first we must start the server. With ansible, we can 
-create the following task in the same location as the previous tasks (starting to notice a trend I hope).
-
-```yaml
-# roles/git/tasks/main.yml
-
-...
-
-- name: Start Docker compose application
-  community.docker.docker_compose_v2:
-    files: /home/git/docker-compose.yml
-    project_src: /home/git
-    state: present
-    pull: always
-  become: true
-  tags:
-    - git
-    - start
-```
-
-Or you can run the docker compose command from the git users home directory `/home/git`:
-
-```bash
-docker-compose up -d # Use -d if you want it to run in the background, as a daemon
-```
-
-Now you can access our server locally using the local address of your server on port 4000 (or whatever you set 
-in the docker compose file). For example, `http://192.168.1.2:4000`. You should see a configuration wizard, if 
-so, you are almost done!
-
-Feel free to customize these settings as you see fit, but ensure you follow the provided directions.
-
-- Do not change the port's, HTTP or SSH, these are internal ports! To change the external ports, update the hosts
-ports in the docker container.
-- Leave the user as git, we set this up for a reason!
-- Disable the **self registration** toggle in the advanced settings section (at the bottom).
-
-<br>
-
-## Configure Local Access
-
-Your Git server is live! You have made it through the hardest part, the rest is easy. Access your server via HTTP
-works but it's not the best but it works. So, now we will configure our local system to use [SSH key authentication](https://www.digitalocean.com/community/tutorials/how-to-configure-ssh-key-based-authentication-on-a-linux-server).
-First you will need an SSH key, but I will leave that up to you to figure out.
-
-Once you have your key, you need to add it to your Gitea server. The process is very similar to added an SSH key to 
-GitHub, **Settings > SSH/GPG Keys > Add Key**. Then paste the content of your `*.pub` file into the content field.
+#### Data Structures
 
-Finally, we need to configure our local machine to use this key when we access our Git server. Update your `.gitconfig`
-file to contain an entry similar to this:
+The last key difference between imperative and function languages is their representation of data structures. Functional languages
+admit a [purely functional](https://en.wikipedia.org/wiki/Purely_functional_data_structure) data structure, where the biggest difference is immutability. Purely functional data structures are 
+strongly immutable, which allows for many advantages, such as [persistence](https://en.wikipedia.org/wiki/Persistent_data_structure), quick copy and [thread safety](https://en.wikipedia.org/wiki/Thread_safety).
+Of the advantages listed, I will only go in detail about one: **persistence.** Purely functional data structures are persistent which 
+means that when modifications occur, the previous state will be kept unmodified. A common comparison is to the non-persistent array 
+which admits a **destructive update** which cannot be undone, since no previous versions are kept.
 
-```sshconfig
-Host gitea # Update as needed
-  Port 222 # Update as needed
-  User git
-  HostName 192.168.1.2 # Use your address here, we will change this later
-  IdentityFile ~/.ssh/key
-```
+***NOTE: Elixir is not a purely functional language and as a result, does not implement a purely functional data structure.***
 
-Much of these details will change when we setup our server to run on our domain, but for now, give them a try 
-and adjust them accordingly.
 
-When you attempt to clone a repo (for example) you will use the URL: 
+## Why Functional?
 
-```bash
-git clone git@gitea:<username>/<repo>.git
-```
+That was quite a long explanation, but it covered almost everything you would need to know to *begin* learning a functional language.
+However, I did not explain why **I** decided to learn. Functional languages are rarely faster (or even as fast) as imperative languages
+like C, so the choice was not made for performance. The most obvious choice: ***I want to.*** So many software developers spend too much 
+time worrying about what is "the best" or "the fastest." Maybe they should just be learning what they **want.** 
 
-Notice, we use **gitea** here as the host. Since this is how we configured our config to route to our server.
+Like I stated in the background, I, like many others, run at the sight of functional languages, but its about time I break that fear!
+The next sections of this article will highlight my experience learning the **Elixir Programming Language,** so if you were only here for 
+the functional definition, this is a good stopping point.
 
-<br>
+## Why Elixir?
 
-#### Side Note: Local Access
+I have talked a lot about Elixir language but what exactly is it? Obviously its a functional programming language, but that's very vague.
+"[Elixir](https://elixir-lang.org) is a dynamic, functional language for building scalable and maintainable applications." Elixir runs on the [Erlang](https://www.erlang.org) VM which is 
+known for creating fault tolerant, low-latency, distributed systems. The language can be installed and testing in the interactive elixir shell 
+`iex`, similar to pythons interactive shell. The interactive shell was a great tool for my own learning while reading through the documentation.
 
-If you would only like access to this server from your local network then you can stop at this step. 
+Elixir was first released in **2012** which makes it a newer language, but not as new as some (Odin, or Zig). With this comes a large user base
+as well as a large developer ecosystem. But, what makes elixir stand out in that aspect is its compatibility with Erlang. Erlang, which appeared
+in **1986** has a huge ecosystem of libraries and tools which work seamlessly in Elixir. Elixir comes packaged with a build tool, `mix` which allows
+for compilation and interpretation of elixir code. Elixir *also* has a dedicated package manager, `hex`, which is comparable to `npm` in terms of 
+use. However, Elixir's ecosystem does not compare to the JavaScript ecosystem (what language does?).
 
-<br>
-
-## Configure Remote Access
+One of the most popular uses of Elixir is with the [Phoenix Web Framework](https://www.phoenixframework.org). Phoenix, a full stack web framework that boasts its countless features 
+which include **LiveView**, a tool for building real-time web applications. Another popular library, **[Ecto](https://hexdocs.pm/ecto/Ecto.html)** is a SQL ORM that is built into the Phoenix
+framework and allows for seamless database connections from your web application back end. (The Phoenix framework will come up more later.)
 
-We will be using an existing **Cloudflare tunnel**, but I will not go into detail about setting one 
-up. It is a pretty simple process that can be done without too much explanation. So, I will assume
-you have a tunnel up and running. All we have to do, is route an endpoint from our local machine
-to sub domain in our Cloudflare tunnel. By now, this should be easy for you, since you have setup
-and configured your tunnel already (hopefully). But to remind you, you must add a record to your 
-`config.yml` file, wherever it is on your system.
-
-```yaml
-...
-
-ingress:
-    - hostname: git.domain.net       # Enter your domain here
-      service: http://localhost:4000 # Update the port as needed
-    ...
-```
 
-But that is not all, the last step you need to do is add a [CNAME record](https://en.wikipedia.org/wiki/CNAME_record) in your Cloudflare 
-DNS dashboard. This can be done manually, like you have before, or by creating an Ansible task
-as follows. This will be its own role, `cloudflared`
+But who cares? Well, many large companies you have heard of use Elixir in their software. Some of which include WhatsApp, Discord, Heroku, Pepsico
+and [more](https://elixir-lang.org/cases.html).
 
-```yaml
-# roles/cloudflared/tasks/main.yml
+## The Beginning
 
-...
-# Update domain to your own
-    
-- name: Configure cloudflare Tunnel DNS Record (CNAMEs) for *.domain.net
-  community.general.cloudflare_dns:
-    zone: "domain.net"
-    record: "{{ item }}.domain.net"
-    type: "CNAME"
-    value: "{{ tunnel_id }}.cfargotunnel.com"
-    state: present
-    proxied: true
-    api_token: "{{ cloudflare_api_key }}"
-  loop: "{{ domain_cnames }}"
-  tags:
-    - cloudflared
-    - cnames
-```
+Personally, I am of the believe the best (and maybe even only) way to learn a programming language is to build something. No matter how many 
+videos you watch, tutorials you read, or examples you look at, you will never fully understand the nuances of a language until you have tried 
+it out yourself. Of course, this does assume you have a basic understanding of programming and software design. So, to adhere to my own advice,
+the first thing I did was create a small project. The ever-dreaded, **To-do List.** 
 
-Like in the previous steps, we will need some variables in our `roles/cloudflared/vars/main.yml` file.
-
-```yaml
-
-...
-
-tunnel_id: "tunnel_id"        # Enter your tunnel id here
-cloudflare_api_key: "api_key" # Enter your API key here
-
-# Include as many sub domains as you want, for now, we just need git
-gophernest_cnames:
-  - git               
-  - ...
-```
+I choose this project because it is simple, I have written a million of them, it allows me to learn terminal I/O, file I/O, basic data handling,
+and some more complex data types such as maps and lists. Typically, my first go-to application when learning a new language is a simple web server.
+But, since I wanted to experiment with **Phoenix** I decided to wait until after getting my hands on the language before trying such a detailed 
+framework.
 
-You may notice, we are using an API key. This is a free and simple process which is described [here](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/)
-in the Cloudflare docs. The key will allow us to update DNS records using their API.
-
-Now, you will be able to access the web interface of your git server at *git.yourdomain.net*! However, 
-we cannot use this domain with SSH to complete actions, such as cloning. At this state, you can clone
-(or do other actions) using a URL that looks like this:
-
-```bash
-git clone git@your_servers_ip:username/repo.git
-```
-
-*NOTE: Tunneling TCP or UDP is more complex and will not be apart of this guide.*
-
-But this is not ideal, nobody wants to use their server IP address to access their git server! So, what
-can we do? Well, the best option is to simply use a DNS the *old* way. In your Cloudflare DNS panel, 
-create an **A** entry with a value of whatever subdomain you want (we will need this later) and
-the content being your servers IP address. For this record, make sure to *deselect* the proxied 
-check box. What this will do is route the traffic from **subdomain.domain.net** to the IP address.
-
-But why do we need that? Having a route will allow us to configure our SSH config to use this URL and 
-access our git server via SSH without much effort. Update the previous record we created in our `~/.ssh/config` 
-file to look more like this:
-
-```sshconfig
-Host gitea # Remeber this value!
-  Port 222
-  User git
-  HostName subdomain.domain.net # This is the only change
-  IdentityFile ~/.ssh/key
-```
-
-You should now be able to complete SSH actions using the **gitea** domain! An example would look like this:
-
-```bash
-git clone git@gitea:username/repo.git
-```
-
-Simple right! We are just about done, the last thing we need to do is update our Gitea config to use this 
-new route in the frontend. You may notice that your web UI will provide a different value when you press 
-clone on a repo (for example). To fix this, all you need to do edit your config file at 
-`/home/git/gitea/gitea/conf/app.ini`. You will replace the line starting with `SSH_DOMAIN` to match whatever
-value you labeled your SSH key to use.
-
-For example:
-
-```ini
-[server]
-...
-SSH_DOMAIN = gitea
-```
-
-You may also edit any other domain values you see to match your own domain. These values will update the 
-text fields that are provided to the user when actions are taken. After restarting the docker compose image
-you will see the updates live!
-
-For those using Ansible, this config change can be done using a simple task added to your `roles/git/tasks/main.yml`
-file.
-
-```yaml
-# roles/git/tasks/main.yml
-
-...
-
-- name: Update the ssh domain in the config file if it exists
-  replace:
-    path: /home/git/gitea/gitea/conf/app.ini
-    regexp: '^SSH_DOMAIN = (.*)'
-    replace: 'SSH_DOMAIN = gitea'
-  become: true
-  tags:
-    - git
-    - config
-```
-
-*NOTE: I have also found it helpful to append this new task to the bottom of the **git** role as a safety measure.*
-
-```yaml
-# roles/git/tasks/main.yml
-
-...
-
-- name: Restart Docker compose application
-  community.docker.docker_compose_v2:
-    files: /home/git/docker-compose.yml
-    project_src: /home/git
-    state: restarted
-    pull: always
-  become: true
-  tags:
-    - git
-    - restart
-```
-
-This will ensure the application is in its most recent state after each update.
-
-
-## Conclusion
-
-You now have your own version control server running in your home server! This solution should not replace 
-GitHub in your workflow, some projects belong in the public eye. Your favorite projects are a great way for
-future employers to see what kind of things you can do! But some things, like your Ansible config files, or 
-your NixOS configuration, does not need to be public. Your home git server is a great place for those projects!
-Just remember to make them private repos in Gitea ;)
+The application can be found on my GitHub [here](https://github.com/haydenhargreaves/ElixirTodo). I would like to note, I did not spend much effort on the repo or making the UI very beautiful.
+I hope you can understand that quality was not the goal here. 
+
+After writing this simple CLI tool I felt far more confident in my Elixir ability and the ability to read the docs and find what I was looking for 
+without just prompting an LLM to solve my problems.
+
+But that reminds me, I actually lied to you. The first thing I did was *not* write the to-do list. No, the very first thing I did was read through 
+a good chunk of the [Elixir Getting Started Guide](https://hexdocs.pm/elixir/introduction.html). In the past few years, I have tried my hand at over a dozen programming languages, many of 
+which I gave up on very fast. The most common complaint I have with modern programming languages is their lack of comprehensive documentation. However,
+the Elixir documentation *blew my socks off!* The documentation is **amazing.** Not only is it very easy to read, it **makes sense.** I can remember trying
+to learn a few languages and trying to read their docs was a nightmare, *cough cough, Zig.* After just a few hours, I had a pretty solid understanding of 
+the language at a semantic level and was able to read through more complicated examples with ease. 
+
+The introduction linked above is a complete walk through of *almost* everything you would need to write industry grade software in the Elixir language.
+Even after only reading through the first 10 or so sections, I was beyond ready to begin writing code.
+
+The [modules](https://hexdocs.pm/elixir/Kernel.html) segment of the docs is just as powerful, especially once you have jumped into the deep end of writing your own code. Documentation complete 
+with syntax, functions, types, a summary and even examples can be found for each and every module in the standard library. It really is the best resource
+I have found (so far) for learning the language. Which is not something I can say for other languages.
+
+## An Upgrade
+
+So now I have written something small, and read through the documentation. What's next? Well, a large scale application, duh! For this project, I will build
+a full stack web application using the Phoenix Framework. This app will allow users to share, copy, create and search for recipes. I have recently developed 
+a love for cooking and having to store all my recipes in my notes app is cumbersome. Plus, my parents are **amazing** cooks and I would to be able to "borrow" 
+their recipes and save them for myself, without having to copy them manually.
+
+## Elixir Review
+
+The learning process has been put on pause to focus on work, but when I make it back to 
+Elixir, I will finish the conclusion!
+

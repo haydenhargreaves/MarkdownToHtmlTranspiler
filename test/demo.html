@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown To HTML Transpiler Demo</title>
+  <link rel="stylesheet" href="./demo.css" />
+</head>
+
+<body>
+  <div class="journal-wrapper prose">
+    <p>Date: 2025/04/28 Desc: I have decided to begin the journey of learning functional programming. Here is my
+      experience.</p>
+    <h1>What is a Functional Programming Language: Featuring Elixir</h1>
+    <p><img src="https://hhargreaves.net/journal/elixir-logo.png" alt="Jet Brains Logo"
+        style="background-color: white; border-radius: 15px; padding: 10px; margin-inline: 10px; margin-block: 2.5%;"
+        width="300"></p>
+    <p><br></p>
+    <h6>Author: Hayden Hargreaves</h6>
+    <h6>Published: 05/21/2025</h6>
+    <h2>Background</h2>
+    <p>Many programmers tend to avoid <strong>functional programming</strong> due to its perceived complexity, myself
+      included. But is functional programming really that much more complex? My goal is to break my fear of functional
+      programming, <a href="https://en.wikipedia.org/wiki/Monad_(functional_programming" target="_blank">monads</a>), <a
+        href="https://en.wikipedia.org/wiki/Functor" target="_blank">functors</a>, and all those <em>scary</em> terms
+      frequently tossed around in the functional space.</p>
+    <p>How am I going to do this? Well, I am definitely not going to start with <a href="https://www.haskell.org"
+        target="_blank">Haskell</a>. For those who have never seen or heard of Haskell, this decision might be hard to
+      understand. I will not explain myself too much. But I will provide a code snippet from the Haskell docs and let
+      you decide if it a worthy language for someone who has never written a line of functional code in their life.</p>
+    <code>
+      haskell
+      <br>
+      primes = filterPrime [2..] where
+      <br>
+      filterPrime (p:xs) =
+      <br>
+      p : filterPrime [x | x <- xs, x `mod` p /=0] <br>
+
+    </code>
+    <p>Personally, the Haskell language is far too esoteric for my liking. Eventually, I would love to be able to, at
+      the very least, <strong>read</strong> Haskell code, but not yet. So this put me a spot to select from a large
+      selection of languages. I did not want to use a language like <strong>Python</strong> or
+      <strong>JavaScript</strong> which can be written to <em>seem</em> functional. No, I wanted to write a
+      <strong>real</strong> functional language. A common list of as follows:
+    </p>
+    <ul>
+      <li><a href="https://www.haskell.org" target="_blank">Haskell</a></li>
+      <li><a href="https://www.erlang.org" target="_blank">Erlang</a></li>
+      <li><a href="https://elixir-lang.org" target="_blank">Elixir</a></li>
+      <li><a href="https://www.scala-lang.org" target="_blank">Scala</a></li>
+      <li><a href="https://clojure.org" target="_blank">Clojure</a></li>
+      <li><a href="https://ocaml.org" target="_blank">OCaml</a></li>
+      <li><a href="https://lisp-lang.org" target="_blank">Common Lisp</a></li>
+    </ul>
+    <p>To avoid offending all of the "functional bros" I will not explain my thought process much. However, I will
+      mention that I tried to learn <strong>OCaml</strong> a years ago and could not enjoy it. Maybe that was because I
+      was not as advanced as I am today, or maybe I did not have the proper mindset. Regardless, that ruled out OCaml. I
+      have no experience in any of the other languages, so I did what most would do. I let Reddit decide! The <a
+        href="https://www.reddit.com/r/elixir/" target="_blank">Elixir</a> Reddit page was very informative as well as
+      providing me with a link to the <a href="https://survey.stackoverflow.co/2024/technology#top-paying-technologies"
+        target="_blank">2024 Stack Overflow Survey</a> which described Erlang and Elixir as the top two paying
+      languages. </p>
+    <p>With that out of the way, lets talk more about what functional programming is.</p>
+    <h2>What is Functional Programming</h2>
+    <p>At the most basic level, functional programming is defined as a <a
+        href="https://en.wikipedia.org/wiki/Functional_programming" target="_blank">"programming paradigm where programs
+        are
+        constructed by applying and composing functions"</a>. In laymen terms, a majority of the code written in these
+      languages is just functions. Everything can be expressed as some composition of functions. For this reason, a
+      strong understanding of mathematics can be hugely beneficial to functional programmers.</p>
+    <blockquote>"Functional programming evolved from lambda calculus" </blockquote>
+    <h4>Pure Functions</h4>
+    <p>Another key difference between other paradigms is the strict immutability. Functional programming introduces the
+      term "<a href="https://en.wikipedia.org/wiki/Pure_function" target="_blank">pure function</a>" which is any
+      function that can be run (any amount of times) and will always produce the same output, <strong>and cannot be
+        affected by (or affect) any mutable state.</strong> The intention of writing pure functions is to prevent <a
+        href="https://en.wikipedia.org/wiki/Side_effect_(computer_science" target="_blank">side effects</a>), "any
+      observable effect other than its primary purpose."</p>
+    <p>To simplify, the two properties of a <strong>pure</strong> function are:</p>
+    <p>1) The function will return an identical result for identical arguments. With <strong><em>no</em></strong>
+      variation for any reason, including reference arguments. 2) The function has no <em>side effects</em>, no mutation
+      of local static variables, non-local variables, etc.)</p>
+    <p>An example of a pure function in C++ may look as follows:</p>
+    <code>
+      c++
+      <br>
+      void f() {
+      <br>
+      static std::atomic<unsigned int> x = 0;
+        <br>
+        ++x;
+        <br>
+        }
+        <br>
+
+    </code>
+    <p>The function <code>f()</code> is pure because it follows the above properties.</p>
+    <code>
+      c++
+      <br>
+      int f_i() {
+      <br>
+      static int x = 0;
+      <br>
+      ++x;
+      <br>
+      return x;
+      <br>
+      }
+      <br>
+
+    </code>
+    <p>However, the function <code>f_i()</code> is impure because it returns a variation of a static variable.</p>
+    <p>Countless more examples of impure functions can be found <a
+        href="https://en.wikipedia.org/wiki/Pure_function#Impure_functions" target="_blank">here</a>.</p>
+    <p><strong>NOTE:</strong> I wanted to write these examples in Elixir, but due to its functional nature, it would be
+      very hard.</p>
+    <p><br></p>
+    <h4>Functions are First Class Citizens</h4>
+    <p>Another key property of functional programming is that functions are known as <a
+        href="https://en.wikipedia.org/wiki/First-class_citizen" target="_blank">first class citizens</a> which means
+      they can be assigned to variables, passed into other functions as arguments (<a
+        href="https://en.wikipedia.org/wiki/Higher-order_function" target="_blank">higher order functions</a>) and
+      returned from functions. This is not uncommon in modern programming languages so I will not provide an in-depth
+      explanation.</p>
+    <p><br></p>
+    <h4>Recursion</h4>
+    <p>The death of many modern programming languages, recursion, is one of the many strengths of functional languages.
+      <a href="https://en.wikipedia.org/wiki/Recursion_(computer_science" target="_blank">Recursion</a>) occurs when a
+      functions calls itself. This is the most common way to implement <a href="https://en.wikipedia.org/wiki/Iteration"
+        target="_blank">iteration</a> in functional programming. For example a simple loop in any common procedural
+      language:
+    </p>
+    <code>
+      c++
+      <br>
+      std::vector<int> numbers = {1, 2, 4, 8, 16};
+        <br>
+
+        <br>
+        for (size_t i = 0; i < numbers.size(); i++) { <br>
+          std::cout << numbers[i] << " " ; <br>
+            }
+            <br>
+
+    </code>
+    <p>Can be written in a similar way using recursion with Elixir:</p>
+    <code>
+      Elixir
+      <br>
+      def print_list([]), do: IO.puts("") # Base case: when the list is empty, this function is called
+      <br>
+
+      <br>
+      def print_list([head | tail]) do
+      <br>
+      IO.puts(head) # Print the first element in the list (head)
+      <br>
+      print_list(tail) # Call the function again with the remaining elements
+      <br>
+      end
+      <br>
+
+    </code>
+    <p>Programmers coming from other languages might freak when they see so much recursion, and it is not wrong to
+      worry. In procedural languages, recursion requires the stack to keep a record of each function call, and when
+      recursion is used to extreme levels, the stack becomes very large and uses lots of memory. Not very efficient!
+      However, functional programming languages found a solution, <a href="https://en.wikipedia.org/wiki/Tail_call"
+        target="_blank">tail recursion</a>. Tail recursion allows the compiler to creation a subroutine which represents
+      the final action (final function call) and place it onto the stack, allowing the program to jump right to the end
+      without having to store the entire recursive loop in stack memory. This reduces the memory stack space from linear
+      or O(N) to constant or O(1). A huge performance increases in recursive programs.</p>
+    <p><br></p>
+    <h4>Strict vs. Non-Strict Evaluation</h4>
+    <p>Functional languages can be categorized by <em>strict (eager)</em> or <em>non-strict (lazy)</em> evaluation. The
+      "Functional programming evolved from lambda calculus"
+      different evaluation styles refer to how arguments are processed inside an expression under evaluation. This
+      concept is quite complex and this overview does not warrant the necessity for such details. However, a simple
+      example can explain (on a higher level) the difference. <strong>"Under strict evaluation, the evaluation of any
+        term containing
+        a failing subterm fails.</strong> An example makes this a bit easier to understand. We will use the same example
+      to described both evaluation types.</p>
+    <code>
+
+      <br>
+      print length([2+1, 3*2, 1/0, 5-4])
+      <br>
+
+    </code>
+    <p>In a language categorized as <em>strict</em>, the expression above will fail, due to the term <code>1/0</code>
+      failing. However, in a language with <em>non-strict</em> evaluation, the length expression will return 4 because
+      it does attempt to evaluate the subterms, which result in failure.</p>
+    <p>To summarize, <em>lazy</em> evaluation does not attempt to evaluate function arguments unless their values are
+      required for the function call itself.</p>
+    <p><strong><em>NOTE: Elixir is a strictly evaluated language.</em></strong></p>
+    <p><br></p>
+    <h4>Referential Transparency</h4>
+    <p>Another very detailed differentiation from imperative programming languages. <a
+        href="https://en.wikipedia.org/wiki/Referential_transparency" target="_blank">Referential transparency</a> stems
+      from linguistic roots and language by extension. Applications in this context (computer science) states that "a
+      language is <em>referentially
+        transparent</em> when an expression built from another, replaces the expression with a subexpression which
+      represents the same value and does not change the value of the expression." That sounds very complicated, and it
+      is, but to be simple, expressions cannot be modified, only replaced. </p>
+    <p>Functional programming languages do not have <strong>assignment statements</strong>, because a value can never be
+      changed once it is defined. This is a result of the language allowing variables to be swapped with their value at
+      any time. Therefore, functional languages are referentially transparent.</p>
+    <p>Another example will make this easier to understand. Consider the following assignment statement from <a
+        href="https://en.wikipedia.org/wiki/C_(programming_language" target="_blank">C</a>). This assignment changes the
+      value assigned to the variable <code>x</code>. If the initial value of <code>x</code> was to be <code>1</code>,
+      the result would be <code>10</code>. But when called again, the result would be <code>100</code>. Since replacing
+      <code>x</code> with <code>10</code> or <code>100</code> gives the program different meaning, it is not
+      <em>referentially transparent.</em>
+    </p>
+    <code>
+      c
+      <br>
+      x = x * 10
+      <br>
+
+    </code>
+    <p>However, consider the following elixir function, <code>f(x)</code>. This implementation is <em>transparent</em>,
+      as it does not modify the value of x, which results in the absence of <strong>side effects</strong>. Instead, it
+      returns a value which can be used to replace an existing value. This is the standard in functional languages which
+      results in their referential nature.</p>
+    <code>
+      elixir
+      <br>
+      def f(x) do
+      <br>
+      x + 1
+      <br>
+      end
+      <br>
+
+    </code>
+    <p><br></p>
+    <h4>Data Structures</h4>
+    <p>The last key difference between imperative and function languages is their representation of data structures.
+      Functional languages admit a <a href="https://en.wikipedia.org/wiki/Purely_functional_data_structure"
+        target="_blank">purely functional</a> data structure, where the biggest difference is immutability. Purely
+      functional data structures are strongly immutable, which allows for many advantages, such as <a
+        href="https://en.wikipedia.org/wiki/Persistent_data_structure" target="_blank">persistence</a>, quick copy and
+      <a href="https://en.wikipedia.org/wiki/Thread_safety" target="_blank">thread safety</a>. Of the advantages listed,
+      I will only go in detail about one: <strong>persistence.</strong> Purely functional data structures are persistent
+      which means that when modifications occur, the previous state will be kept unmodified. A common comparison is to
+      the non-persistent array which admits a <strong>destructive update</strong> which cannot be undone, since no
+      previous versions are kept.
+    </p>
+    <p><strong><em>NOTE: Elixir is not a purely functional language and as a result, does not implement a purely
+          functional data structure.</em></strong></p>
+    <h2>Why Functional?</h2>
+    <p>That was quite a long explanation, but it covered almost everything you would need to know to <em>begin</em>
+      learning a functional language. However, I did not explain why <strong>I</strong> decided to learn. Functional
+      languages are rarely faster (or even as fast) as imperative languages like C, so the choice was not made for
+      performance. The most obvious choice: <strong><em>I want to.</em></strong> So many software developers spend too
+      much time worrying about what is "the best" or "the fastest." Maybe they should just be learning what they
+      <strong>want.</strong>
+    </p>
+    <p>Like I stated in the background, I, like many others, run at the sight of functional languages, but its about
+      time I break that fear! The next sections of this article will highlight my experience learning the <strong>Elixir
+        Programming Language,</strong> so if you were only here for the functional definition, this is a good stopping
+      point.</p>
+    <h2>Why Elixir?</h2>
+    <p>I have talked a lot about Elixir language but what exactly is it? Obviously its a functional programming
+      language, but that's very vague. "<a href="https://elixir-lang.org" target="_blank">Elixir</a> is a dynamic,
+      functional language for building scalable and maintainable applications." Elixir runs on the <a
+        href="https://www.erlang.org" target="_blank">Erlang</a> VM which is known for creating fault tolerant,
+      low-latency, distributed systems. The language can be installed and testing in the interactive elixir shell
+      <code>iex</code>, similar to pythons interactive shell. The interactive shell was a great tool for my own learning
+      while reading through the documentation.
+    </p>
+    <p>Elixir was first released in <strong>2012</strong> which makes it a newer language, but not as new as some (Odin,
+      or Zig). With this comes a large user base as well as a large developer ecosystem. But, what makes elixir stand
+      out in that aspect is its compatibility with Erlang. Erlang, which appeared in <strong>1986</strong> has a huge
+      ecosystem of libraries and tools which work seamlessly in Elixir. Elixir comes packaged with a build tool,
+      <code>mix</code> which allows for compilation and interpretation of elixir code. Elixir <em>also</em> has a
+      dedicated package manager, <code>hex</code>, which is comparable to <code>npm</code> in terms of use. However,
+      Elixir's ecosystem does not compare to the JavaScript ecosystem (what language does?).
+    </p>
+    <p>One of the most popular uses of Elixir is with the <a href="https://www.phoenixframework.org"
+        target="_blank">Phoenix Web Framework</a>. Phoenix, a full stack web framework that boasts its countless
+      features which include <strong>LiveView</strong>, a tool for building real-time web applications. Another popular
+      library, <strong>[Ecto](https://hexdocs.pm/ecto/Ecto.html)</strong> is a SQL ORM that is built into the Phoenix
+      framework and allows for seamless database connections from your web application back end. (The Phoenix framework
+      will come up more later.)</p>
+    <p>But who cares? Well, many large companies you have heard of use Elixir in their software. Some of which include
+      WhatsApp, Discord, Heroku, Pepsico and <a href="https://elixir-lang.org/cases.html" target="_blank">more</a>.</p>
+    <h2>The Beginning</h2>
+    <p>Personally, I am of the believe the best (and maybe even only) way to learn a programming language is to build
+      something. No matter how many videos you watch, tutorials you read, or examples you look at, you will never fully
+      understand the nuances of a language until you have tried it out yourself. Of course, this does assume you have a
+      basic understanding of programming and software design. So, to adhere to my own advice, the first thing I did was
+      create a small project. The ever-dreaded, <strong>To-do List.</strong> </p>
+    <p>I choose this project because it is simple, I have written a million of them, it allows me to learn terminal I/O,
+      file I/O, basic data handling, and some more complex data types such as maps and lists. Typically, my first go-to
+      application when learning a new language is a simple web server. But, since I wanted to experiment with
+      <strong>Phoenix</strong> I decided to wait until after getting my hands on the language before trying such a
+      detailed framework.
+    </p>
+    <p>The application can be found on my GitHub <a href="https://github.com/haydenhargreaves/ElixirTodo"
+        target="_blank">here</a>. I would like to note, I did not spend much effort on the repo or making the UI very
+      beautiful. I hope you can understand that quality was not the goal here. </p>
+    <p>After writing this simple CLI tool I felt far more confident in my Elixir ability and the ability to read the
+      docs and find what I was looking for without just prompting an LLM to solve my problems.</p>
+    <p>But that reminds me, I actually lied to you. The first thing I did was <em>not</em> write the to-do list. No, the
+      very first thing I did was read through a good chunk of the <a href="https://hexdocs.pm/elixir/introduction.html"
+        target="_blank">Elixir Getting Started Guide</a>. In the past few years, I have tried my hand at over a dozen
+      programming languages, many of which I gave up on very fast. The most common complaint I have with modern
+      programming languages is their lack of comprehensive documentation. However, the Elixir documentation <em>blew my
+        socks off!</em> The documentation is <strong>amazing.</strong> Not only is it very easy to read, it
+      <strong>makes sense.</strong> I can remember trying to learn a few languages and trying to read their docs was a
+      nightmare, <em>cough cough, Zig.</em> After just a few hours, I had a pretty solid understanding of the language
+      at a semantic level and was able to read through more complicated examples with ease.
+    </p>
+    <p>The introduction linked above is a complete walk through of <em>almost</em> everything you would need to write
+      industry grade software in the Elixir language. Even after only reading through the first 10 or so sections, I was
+      beyond ready to begin writing code.</p>
+    <p>The <a href="https://hexdocs.pm/elixir/Kernel.html" target="_blank">modules</a> segment of the docs is just as
+      powerful, especially once you have jumped into the deep end of writing your own code. Documentation complete with
+      syntax, functions, types, a summary and even examples can be found for each and every module in the standard
+      library. It really is the best resource I have found (so far) for learning the language. Which is not something I
+      can say for other languages.</p>
+    <h2>An Upgrade</h2>
+    <p>So now I have written something small, and read through the documentation. What's next? Well, a large scale
+      application, duh! For this project, I will build a full stack web application using the Phoenix Framework. This
+      app will allow users to share, copy, create and search for recipes. I have recently developed a love for cooking
+      and having to store all my recipes in my notes app is cumbersome. Plus, my parents are <strong>amazing</strong>
+      cooks and I would to be able to "borrow" their recipes and save them for myself, without having to copy them
+      manually.</p>
+    <h2>Elixir Review</h2>
+    <p>The learning process has been put on pause to focus on work, but when I make it back to Elixir, I will finish the
+      conclusion!</p>
+  </div>
+
+</body>
+
+</html>
