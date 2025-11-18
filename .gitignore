@@ -4,3 +4,5 @@
 parser
 /.vscode
 /*.html
+/target
+/target/*

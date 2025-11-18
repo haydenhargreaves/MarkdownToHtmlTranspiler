@@ -20,6 +20,10 @@
             gcc
             gdb
             stdenv
+
+            rustup
+            rustc
+            cargo
           ];
 
           # Define the shell that will be executed.
