@@ -133,7 +133,7 @@ impl Node {
 }
 
 pub fn main() {
-    let root = Node::Document {
+    let mut root = Node::Document {
         children: vec![Node::Heading {
             level: 1,
             children: vec![
@@ -149,6 +149,14 @@ pub fn main() {
             ],
         }],
     };
+
+    let p = Node::Paragraph {
+        children: vec![Node::Text {
+            content: String::from("This is a paragraph tag."),
+        }],
+    };
+
+    root.add_child(p);
 
     println!("{}", root.to_html())
 }
