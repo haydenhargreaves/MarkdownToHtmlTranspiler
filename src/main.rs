@@ -1,3 +1,7 @@
+use std::io::Write;
+use std::{fs, io, usize};
+use std::path::Path;
+
 pub enum Node {
     // Structure Nodes
     Document { children: Vec<Node> },
@@ -7,6 +11,7 @@ pub enum Node {
     ListItem { children: Vec<Node> },
     CodeBlock { children: Vec<Node> },
     BlockQuote { children: Vec<Node> },
+    ImageNode { src: String, alt: String },
 
     // Inline Nodes
     Text { content: String },
@@ -24,35 +29,36 @@ impl Node {
             Node::Document { children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
                 format!(
-                    "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Document</title>\n</head>\n<body>{}</body>\n</html>",
+                    "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Document</title>\n</head>\n<body>\n{}</body>\n</html>",
                     inner
                 )
             }
             Node::Heading { level, children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
-                format!("<h{level}>{}</h{level}>", inner, level = level)
+                format!("<h{level}>{}</h{level}>\n", inner, level = level)
             }
             Node::Paragraph { children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
-                format!("<p>{}</p>", inner)
+                format!("<p>{}</p>\n", inner)
             }
             Node::List { ordered, children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
                 let tag = if *ordered { "ol" } else { "ul" };
-                format!("<{tag}>{}</{tag}>", inner, tag = tag)
+                format!("<{tag}>{}</{tag}>\n", inner, tag = tag)
             }
             Node::ListItem { children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
-                format!("<li>{}</li>", inner)
+                format!("<li>{}</li>\n", inner)
             }
             Node::CodeBlock { children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
-                format!("<code>{}</code>", inner)
+                format!("<code>{}</code>\n", inner)
             }
             Node::BlockQuote { children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
-                format!("<blockquote>{}</blockquote>", inner)
+                format!("<blockquote>{}</blockquote>\n", inner)
             }
+            Node::ImageNode { src, alt } => format!("<img src=\"{}\" alt=\"{}\">\n", src, alt),
 
             // Inline nodes
             Node::Text { content } => format!("{}", content),
@@ -81,6 +87,7 @@ impl Node {
             | Node::CodeBlock { children }
             | Node::BlockQuote { children } => children.is_empty(),
 
+
             // Inline nodes
             Node::Text { content }
             | Node::Bold { content }
@@ -90,6 +97,7 @@ impl Node {
 
             // Special rules
             Node::Link { href, content } => content.is_empty() && href.is_empty(),
+            Node::ImageNode { src, alt } => src.is_empty() && alt.is_empty(),
         }
     }
 
@@ -97,25 +105,42 @@ impl Node {
     /// have children, None will be returned.
     pub fn children(&self) -> Option<&[Node]> {
         match self {
+            // Structure Nodes
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
-            | Node::List {
-                ordered: _,
-                children,
-            }
+            | Node::List { ordered: _, children, }
             | Node::ListItem { children }
             | Node::CodeBlock { children }
             | Node::BlockQuote { children } => Some(&children),
 
-            _ => None,
+            // Inline Nodes
+            Node::Text { content: _ }
+            | Node::Bold { content: _ }
+            | Node::Italic { content: _ }
+            | Node::BoldItalic { content: _ }
+            | Node::Code { content: _ } => None,
+
+            // Special Nodes
+            Node::Link { href: _, content: _ } => None,
+            Node::ImageNode { src: _, alt: _ } => None,
         }
     }
 
     /// Add a child to the back of the list of children. If the node is a type which does not allow
     /// children to be added, this function will panic.
+    ///
+    /// Example INVALID usage:
+    ///
+    /// ```rust
+    /// // Attempting to add an inline node as a child of another inline node.
+    /// let mut inline = Node::Text { content: String::from("Hello world") };
+    /// let inline2 = Node::Bold { content: String::from(" bolded text") };
+    /// inline.add_child(inline2); // Will panic! 'Can't add child to this node type.'
+    /// ```
     pub fn add_child(&mut self, child: Node) {
         match self {
+            // Structure Nodes
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
@@ -127,12 +152,61 @@ impl Node {
             | Node::CodeBlock { children }
             | Node::BlockQuote { children } => children.push(child),
 
-            _ => panic!("Can't add child to this node type."),
+            // Inline Nodes
+            Node::Text { content: _ }
+            | Node::Bold { content: _ }
+            | Node::Italic { content: _ }
+            | Node::BoldItalic { content: _ }
+            | Node::Code { content: _ } => panic!("Can't add child to this node type."),
+
+            // Special Nodes
+            Node::Link { href: _, content: _ } => panic!("Can't add child to this node type."),
+            Node::ImageNode { src: _, alt: _ } => panic!("Can't add child to this node type."),
         };
     }
 }
 
-pub fn main() {
+pub struct Parser {
+    content: String,
+    position: usize,
+}
+
+impl Parser {
+    pub fn new(content: String) -> Self {
+        // Normalize the input
+        let normalized = content.replace("\r\n", "\n").replace("\r", "");
+        Self { content: normalized, position: 0 }
+    }
+
+    pub fn parse_document(&self) -> Node {
+        let text = Node::Text { content: self.content.clone() };
+        let heading = Node::Heading { level: 1, children: vec![text] };
+        Node::Document { children: vec![ heading ] }
+    }
+
+    fn peek(&self, offset: usize) -> u8 {
+
+    }
+}
+
+pub struct Filesystem;
+
+impl Filesystem {
+    /// This uses a generic: `<P: AsRef<Path>>` to allow for easy use with any type that can be
+    /// converted into a &Path. Allowing String types, &str types and anything that can be
+    /// converted into a Path type, and then borrowed. There is no run time cost of doing this
+    /// either, so it is very fast and very elegant.
+    pub fn read_file<P: AsRef<Path>>(path: P) -> io::Result<String> {
+        fs::read_to_string(path)
+    }
+
+    pub fn write_file<P: AsRef<Path>>(path: P, contents: &str) -> io::Result<()> {
+        let mut file = fs::File::create(path)?;
+        file.write_all(contents.as_bytes())
+    }
+}
+
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut root = Node::Document {
         children: vec![Node::Heading {
             level: 1,
@@ -158,5 +232,17 @@ pub fn main() {
 
     root.add_child(p);
 
-    println!("{}", root.to_html())
+    let parser = Parser::new(String::from("Hello world\r\nhello\n"));
+    let node = parser.parse_document();
+
+    let content = Filesystem::read_file("./test/journal.md");
+    match content {
+        Ok(s) => Filesystem::write_file("./copied.md", &s)?,
+        Err(err) => panic!("Failed to read file. {}", err)
+    }
+
+    println!("{}", node.to_html());
+
+    // Return a value to meet the main function requirements
+    Ok(())
 }
