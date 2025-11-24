@@ -2,7 +2,7 @@ use transpiler::parser::Parser;
 use transpiler::filesystem::Filesystem;
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let file = Filesystem::read_file("./test/journal.md");
+    let file = Filesystem::read_file("./journal.md");
     let content;
     match file {
         Ok(s) => content = s,

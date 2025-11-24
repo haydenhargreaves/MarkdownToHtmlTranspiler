@@ -131,15 +131,6 @@ impl Node {
 
     /// Add a child to the back of the list of children. If the node is a type which does not allow
     /// children to be added, this function will panic.
-    ///
-    /// Example INVALID usage:
-    ///
-    /// ```rust
-    /// // Attempting to add an inline node as a child of another inline node.
-    /// let mut inline = Node::Text { content: String::from("Hello world") };
-    /// let inline2 = Node::Bold { content: String::from(" bolded text") };
-    /// inline.add_child(inline2); // Will panic! 'Can't add child to this node type.'
-    /// ```
     pub fn add_child(&mut self, child: Node) {
         match self {
             // Structure Nodes
