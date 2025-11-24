@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Node {
     // Structure Nodes
     Document { children: Vec<Node> },
@@ -8,7 +8,7 @@ pub enum Node {
     ListItem { children: Vec<Node> },
     CodeBlock { children: Vec<Node> },
     BlockQuote { children: Vec<Node> },
-    ImageNode { src: String, alt: String },
+    Image { src: String, alt: String },
 
     // Inline Nodes
     Text { content: String },
@@ -21,7 +21,7 @@ pub enum Node {
 
 impl Node {
     /// Recursively convert a node into a HTML string. This is used to generate the DOM output
-    /// tree. This should only be called on the root node of the tree. This function will recursively 
+    /// tree. This should only be called on the root node of the tree. This function will recursively
     /// call itself to create the entire tree.
     ///
     /// Currently, this function does not create indentation, that would be a nice touch though.
@@ -60,7 +60,7 @@ impl Node {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
                 format!("<blockquote>{}</blockquote>\n", inner)
             }
-            Node::ImageNode { src, alt } => format!("<img src=\"{}\" alt=\"{}\">\n", src, alt),
+            Node::Image { src, alt } => format!("<img src=\"{}\" alt=\"{}\">\n", src, alt),
 
             // Inline nodes
             Node::Text { content } => format!("{}", content),
@@ -89,7 +89,6 @@ impl Node {
             | Node::CodeBlock { children }
             | Node::BlockQuote { children } => children.is_empty(),
 
-
             // Inline nodes
             Node::Text { content }
             | Node::Bold { content }
@@ -99,7 +98,7 @@ impl Node {
 
             // Special rules
             Node::Link { href, content } => content.is_empty() && href.is_empty(),
-            Node::ImageNode { src, alt } => src.is_empty() && alt.is_empty(),
+            Node::Image { src, alt } => src.is_empty() && alt.is_empty(),
         }
     }
 
@@ -111,7 +110,10 @@ impl Node {
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
-            | Node::List { ordered: _, children, }
+            | Node::List {
+                ordered: _,
+                children,
+            }
             | Node::ListItem { children }
             | Node::CodeBlock { children }
             | Node::BlockQuote { children } => Some(&children),
@@ -124,8 +126,11 @@ impl Node {
             | Node::Code { content: _ } => None,
 
             // Special Nodes
-            Node::Link { href: _, content: _ } => None,
-            Node::ImageNode { src: _, alt: _ } => None,
+            Node::Link {
+                href: _,
+                content: _,
+            } => None,
+            Node::Image { src: _, alt: _ } => None,
         }
     }
 
@@ -153,15 +158,333 @@ impl Node {
             | Node::Code { content: _ } => panic!("Can't add child to this node type."),
 
             // Special Nodes
-            Node::Link { href: _, content: _ } => panic!("Can't add child to this node type."),
-            Node::ImageNode { src: _, alt: _ } => panic!("Can't add child to this node type."),
+            Node::Link {
+                href: _,
+                content: _,
+            } => panic!("Can't add child to this node type."),
+            Node::Image { src: _, alt: _ } => panic!("Can't add child to this node type."),
         };
     }
 }
-
 
 #[cfg(test)]
 mod node_tests {
     use super::Node;
 
+    #[test]
+    fn can_return_when_empty() {
+        // Document
+        let document_node = Node::Document {
+            children: vec![Node::Paragraph { children: vec![] }],
+        };
+        let document_node_empty = Node::Document { children: vec![] };
+        assert!(!document_node.is_empty());
+        assert!(document_node_empty.is_empty());
+
+        // Heading
+        let heading_node = Node::Heading {
+            level: 1,
+            children: vec![Node::Paragraph { children: vec![] }],
+        };
+        let heading_node_empty = Node::Heading {
+            level: 1,
+            children: vec![],
+        };
+        assert!(!heading_node.is_empty());
+        assert!(heading_node_empty.is_empty());
+
+        // Paragraph
+        let paragraph_node = Node::Paragraph {
+            children: vec![Node::Text {
+                content: String::from("hello"),
+            }],
+        };
+        let paragraph_node_empty = Node::Paragraph { children: vec![] };
+        assert!(!paragraph_node.is_empty());
+        assert!(paragraph_node_empty.is_empty());
+
+        // List
+        let list_node = Node::List {
+            ordered: false,
+            children: vec![Node::ListItem {
+                children: vec![Node::Text {
+                    content: String::from("item"),
+                }],
+            }],
+        };
+        let list_node_empty = Node::List {
+            ordered: false,
+            children: vec![],
+        };
+        assert!(!list_node.is_empty());
+        assert!(list_node_empty.is_empty());
+
+        // ListItem
+        let list_item_node = Node::ListItem {
+            children: vec![Node::Text {
+                content: String::from("item"),
+            }],
+        };
+        let list_item_node_empty = Node::ListItem { children: vec![] };
+        assert!(!list_item_node.is_empty());
+        assert!(list_item_node_empty.is_empty());
+
+        // CodeBlock
+        let code_block_node = Node::CodeBlock {
+            children: vec![Node::Text {
+                content: String::from("code"),
+            }],
+        };
+        let code_block_node_empty = Node::CodeBlock { children: vec![] };
+        assert!(!code_block_node.is_empty());
+        assert!(code_block_node_empty.is_empty());
+
+        // BlockQuote
+        let block_quote_node = Node::BlockQuote {
+            children: vec![Node::Text {
+                content: String::from("quote"),
+            }],
+        };
+        let block_quote_node_empty = Node::BlockQuote { children: vec![] };
+        assert!(!block_quote_node.is_empty());
+        assert!(block_quote_node_empty.is_empty());
+
+        // ImageNode (structure-ish but with fields)
+        let image_node = Node::Image {
+            src: String::from("src"),
+            alt: String::from("alt"),
+        };
+        let image_node_empty = Node::Image {
+            src: String::from(""),
+            alt: String::from(""),
+        };
+        assert!(!image_node.is_empty());
+        assert!(image_node_empty.is_empty());
+
+        // Inline nodes: non-empty
+        let text_node = Node::Text {
+            content: String::from("text"),
+        };
+        let bold_node = Node::Bold {
+            content: String::from("bold"),
+        };
+        let italic_node = Node::Italic {
+            content: String::from("italic"),
+        };
+        let bold_italic_node = Node::BoldItalic {
+            content: String::from("both"),
+        };
+        let code_node = Node::Code {
+            content: String::from("code"),
+        };
+        let link_node = Node::Link {
+            href: String::from("https://example.com"),
+            content: String::from("link"),
+        };
+
+        assert!(!text_node.is_empty());
+        assert!(!bold_node.is_empty());
+        assert!(!italic_node.is_empty());
+        assert!(!bold_italic_node.is_empty());
+        assert!(!code_node.is_empty());
+        assert!(!link_node.is_empty());
+
+        // Inline nodes: empty
+        let text_node_empty = Node::Text {
+            content: String::from(""),
+        };
+        let bold_node_empty = Node::Bold {
+            content: String::from(""),
+        };
+        let italic_node_empty = Node::Italic {
+            content: String::from(""),
+        };
+        let bold_italic_node_empty = Node::BoldItalic {
+            content: String::from(""),
+        };
+        let code_node_empty = Node::Code {
+            content: String::from(""),
+        };
+        let link_node_empty = Node::Link {
+            href: String::from(""),
+            content: String::from(""),
+        };
+
+        assert!(text_node_empty.is_empty());
+        assert!(bold_node_empty.is_empty());
+        assert!(italic_node_empty.is_empty());
+        assert!(bold_italic_node_empty.is_empty());
+        assert!(code_node_empty.is_empty());
+        assert!(link_node_empty.is_empty());
+    }
+
+    #[test]
+    fn children_returns_some_for_structure_nodes() {
+        let child = Node::Text {
+            content: "x".into(),
+        };
+
+        // Document
+        let doc = Node::Document {
+            children: vec![child.clone()],
+        };
+        let doc_children = doc.children().expect("Document should have children");
+        assert_eq!(doc_children.len(), 1);
+
+        // Heading
+        let heading = Node::Heading {
+            level: 1,
+            children: vec![child.clone()],
+        };
+        let heading_children = heading.children().expect("Heading should have children");
+        assert_eq!(heading_children.len(), 1);
+
+        // Paragraph
+        let paragraph = Node::Paragraph {
+            children: vec![child.clone()],
+        };
+        let paragraph_children = paragraph
+            .children()
+            .expect("Paragraph should have children");
+        assert_eq!(paragraph_children.len(), 1);
+
+        // List
+        let list = Node::List {
+            ordered: false,
+            children: vec![child.clone()],
+        };
+        let list_children = list.children().expect("List should have children");
+        assert_eq!(list_children.len(), 1);
+
+        // ListItem
+        let li = Node::ListItem {
+            children: vec![child.clone()],
+        };
+        let li_children = li.children().expect("ListItem should have children");
+        assert_eq!(li_children.len(), 1);
+
+        // CodeBlock
+        let code_block = Node::CodeBlock {
+            children: vec![child.clone()],
+        };
+        let code_block_children = code_block
+            .children()
+            .expect("CodeBlock should have children");
+        assert_eq!(code_block_children.len(), 1);
+
+        // BlockQuote
+        let bq = Node::BlockQuote {
+            children: vec![child.clone()],
+        };
+        let bq_children = bq.children().expect("BlockQuote should have children");
+        assert_eq!(bq_children.len(), 1);
+    }
+
+    #[test]
+    fn children_returns_none_for_inline_nodes() {
+        let text = Node::Text {
+            content: "x".into(),
+        };
+        let bold = Node::Bold {
+            content: "x".into(),
+        };
+        let italic = Node::Italic {
+            content: "x".into(),
+        };
+        let bolditalic = Node::BoldItalic {
+            content: "x".into(),
+        };
+        let code = Node::Code {
+            content: "x".into(),
+        };
+
+        assert!(text.children().is_none());
+        assert!(bold.children().is_none());
+        assert!(italic.children().is_none());
+        assert!(bolditalic.children().is_none());
+        assert!(code.children().is_none());
+    }
+
+    #[test]
+    fn children_returns_none_for_special_nodes() {
+        let link = Node::Link {
+            href: "x".into(),
+            content: "x".into(),
+        };
+        let image = Node::Image {
+            src: "x".into(),
+            alt: "x".into(),
+        };
+
+        assert!(link.children().is_none());
+        assert!(image.children().is_none());
+    }
+
+    #[test]
+    fn add_child_succeeds_for_structure_nodes() {
+        let child = Node::Text {
+            content: "x".into(),
+        };
+
+        {
+            // Document
+            let mut document = Node::Document { children: vec![] };
+            document.add_child(child);
+            if let Some(children) = document.children() {
+                assert_eq!(children.len(), 1);
+            } else {
+                panic!("Document should have children");
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't add child to this node type.")]
+    fn add_child_panics_for_inline_nodes() {
+        let child = Node::Text {
+            content: "x".into(),
+        };
+
+        let mut text = Node::Text {
+            content: "x".into(),
+        };
+        let mut bold = Node::Bold {
+            content: "x".into(),
+        };
+        let mut italic = Node::Italic {
+            content: "x".into(),
+        };
+        let mut bolditalic = Node::BoldItalic {
+            content: "x".into(),
+        };
+        let mut code = Node::Code {
+            content: "x".into(),
+        };
+
+        text.add_child(child.clone());
+        bold.add_child(child.clone());
+        italic.add_child(child.clone());
+        bolditalic.add_child(child.clone());
+        code.add_child(child.clone());
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't add child to this node type.")]
+    fn add_child_panics_for_special_nodes() {
+        let child = Node::Text {
+            content: "x".into(),
+        };
+
+        let mut link = Node::Link {
+            href: "x".into(),
+            content: "x".into(),
+        };
+        let mut image = Node::Image {
+            src: "x".into(),
+            alt: "x".into(),
+        };
+
+        link.add_child(child.clone());
+        image.add_child(child.clone());
+    }
 }
