@@ -2,7 +2,7 @@
 pub enum Node {
     // Structure Nodes
     Document { children: Vec<Node> },
-    Heading { level: u8, children: Vec<Node> },
+    Heading { level: usize, children: Vec<Node> },
     Paragraph { children: Vec<Node> },
     List { ordered: bool, children: Vec<Node> },
     ListItem { children: Vec<Node> },
