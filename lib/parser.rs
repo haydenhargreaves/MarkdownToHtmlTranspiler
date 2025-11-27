@@ -74,6 +74,7 @@ impl<'a> Parser<'a> {
             let c3 = self.peek_nth(2);
 
             // TODO: Need to redesign the nodes
+            // TODO: Support _ AND *
             match (c1, c2, c3) {
                 (None, _, _) | (Some('\n'), Some('\n'), _) => break,
                 (Some('!'), Some('['), _) =>
@@ -155,7 +156,9 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Node::Italic { content: str }
+        Node::Italic {
+            children: vec![Node::Text { content: str }],
+        }
     }
 
     // --- HELPERS ---

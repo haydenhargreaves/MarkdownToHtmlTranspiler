@@ -10,13 +10,12 @@ pub enum Node {
     BlockQuote { children: Vec<Node> },
     Link { href: String, children: Vec<Node> },
 
+    Bold { children: Vec<Node> },
+    Italic { children: Vec<Node> },
+    BoldItalic { children: Vec<Node> },
+
     // Inline Nodes
     Text { content: String },
-
-    // TODO: THESE SHOULD BE STRUCTURE NODES, SO THEY CAN BE CALLED RECURSIVELY
-    Bold { content: String },
-    Italic { content: String },
-    BoldItalic { content: String },
     Code { content: String },
 
     // Special Nodes
@@ -64,16 +63,25 @@ impl Node {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
                 format!("<blockquote>{}</blockquote>\n", inner)
             }
-            Node::Link { href, children} => {
+            Node::Link { href, children } => {
                 let inner = children.iter().map(|x| x.to_html()).collect::<String>();
                 format!("<a href=\"{}\">{}</a>", href, inner)
+            }
+            Node::Bold { children } => {
+                let inner = children.iter().map(|x| x.to_html()).collect::<String>();
+                format!("<strong>{}</strong>", inner)
+            }
+            Node::Italic { children } => {
+                let inner = children.iter().map(|x| x.to_html()).collect::<String>();
+                format!("<em>{}</em>", inner)
+            }
+            Node::BoldItalic { children } => {
+                let inner = children.iter().map(|x| x.to_html()).collect::<String>();
+                format!("<strong><em>{}</em></strong>", inner)
             }
 
             // Inline nodes
             Node::Text { content } => format!("{}", content),
-            Node::Bold { content } => format!("<strong>{}</strong>", content),
-            Node::Italic { content } => format!("<em>{}</em>", content),
-            Node::BoldItalic { content } => format!("<strong><em>{}</em></strong>", content),
             Node::Code { content } => format!("<code>{}</code>", content),
 
             // Special nodes
@@ -90,18 +98,20 @@ impl Node {
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
-            | Node::List { ordered: _, children }
+            | Node::List {
+                ordered: _,
+                children,
+            }
             | Node::ListItem { children }
             | Node::CodeBlock { children }
-            | Node::BlockQuote { children } => children.is_empty(),
+            | Node::BlockQuote { children }
+            | Node::Bold { children }
+            | Node::Italic { children }
+            | Node::BoldItalic { children } => children.is_empty(),
             Node::Link { href, children } => children.is_empty() && href.is_empty(),
 
             // Inline nodes
-            Node::Text { content }
-            | Node::Bold { content }
-            | Node::Italic { content }
-            | Node::BoldItalic { content }
-            | Node::Code { content } => content.is_empty(),
+            Node::Text { content } | Node::Code { content } => content.is_empty(),
 
             // Special rules
             Node::Image { src, alt } => src.is_empty() && alt.is_empty(),
@@ -116,18 +126,20 @@ impl Node {
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
-            | Node::List { ordered: _, children}
+            | Node::List {
+                ordered: _,
+                children,
+            }
             | Node::ListItem { children }
             | Node::CodeBlock { children }
             | Node::BlockQuote { children }
+            | Node::Bold { children }
+            | Node::Italic { children }
+            | Node::BoldItalic { children }
             | Node::Link { href: _, children } => Some(&children),
 
             // Inline Nodes
-            Node::Text { content: _ }
-            | Node::Bold { content: _ }
-            | Node::Italic { content: _ }
-            | Node::BoldItalic { content: _ }
-            | Node::Code { content: _ } => None,
+            Node::Text { content: _ } | Node::Code { content: _ } => None,
 
             // Special Nodes
             Node::Image { src: _, alt: _ } => None,
@@ -142,18 +154,22 @@ impl Node {
             Node::Document { children }
             | Node::Heading { level: _, children }
             | Node::Paragraph { children }
-            | Node::List { ordered: _, children }
+            | Node::List {
+                ordered: _,
+                children,
+            }
             | Node::ListItem { children }
             | Node::CodeBlock { children }
             | Node::BlockQuote { children }
+            | Node::Bold { children }
+            | Node::Italic { children }
+            | Node::BoldItalic { children }
             | Node::Link { href: _, children } => children.push(child),
 
             // Inline Nodes
-            Node::Text { content: _ }
-            | Node::Bold { content: _ }
-            | Node::Italic { content: _ }
-            | Node::BoldItalic { content: _ }
-            | Node::Code { content: _ } => panic!("Can't add child to this node type."),
+            Node::Text { content: _ } | Node::Code { content: _ } => {
+                panic!("Can't add child to this node type.")
+            }
 
             // Special Nodes
             Node::Image { src: _, alt: _ } => panic!("Can't add child to this node type."),
@@ -167,23 +183,45 @@ mod node_tests {
 
     #[test]
     fn can_return_html_string_for_structure_nodes() {
-        let child = Node::Text { content: "CONTENT".into() };
+        let child = Node::Text {
+            content: "CONTENT".into(),
+        };
 
         // Document
         {
-            let node = Node::Document { children: vec![child.clone()] };
+            let node = Node::Document {
+                children: vec![child.clone()],
+            };
             let html = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Document</title>\n</head>\n<body>\nCONTENT</body>\n</html>";
             assert_eq!(node.to_html(), html);
         }
 
         // Heading
         {
-            let node_h1 = Node::Heading { level: 1, children: vec![child.clone()] };
-            let node_h2 = Node::Heading { level: 2, children: vec![child.clone()] };
-            let node_h3 = Node::Heading { level: 3, children: vec![child.clone()] };
-            let node_h4 = Node::Heading { level: 4, children: vec![child.clone()] };
-            let node_h5 = Node::Heading { level: 5, children: vec![child.clone()] };
-            let node_h6 = Node::Heading { level: 6, children: vec![child.clone()] };
+            let node_h1 = Node::Heading {
+                level: 1,
+                children: vec![child.clone()],
+            };
+            let node_h2 = Node::Heading {
+                level: 2,
+                children: vec![child.clone()],
+            };
+            let node_h3 = Node::Heading {
+                level: 3,
+                children: vec![child.clone()],
+            };
+            let node_h4 = Node::Heading {
+                level: 4,
+                children: vec![child.clone()],
+            };
+            let node_h5 = Node::Heading {
+                level: 5,
+                children: vec![child.clone()],
+            };
+            let node_h6 = Node::Heading {
+                level: 6,
+                children: vec![child.clone()],
+            };
             let html_h1 = "<h1>CONTENT</h1>\n";
             let html_h2 = "<h2>CONTENT</h2>\n";
             let html_h3 = "<h3>CONTENT</h3>\n";
@@ -197,18 +235,26 @@ mod node_tests {
             assert_eq!(node_h5.to_html(), html_h5);
             assert_eq!(node_h6.to_html(), html_h6);
         }
-        
+
         // Paragraph
         {
-            let node = Node::Paragraph { children: vec![child.clone()] };
+            let node = Node::Paragraph {
+                children: vec![child.clone()],
+            };
             let html = "<p>CONTENT</p>\n";
             assert_eq!(node.to_html(), html);
         }
 
         // List
         {
-            let node_ul = Node::List { ordered: false, children: vec![child.clone()] };
-            let node_ol = Node::List { ordered: true, children: vec![child.clone()] };
+            let node_ul = Node::List {
+                ordered: false,
+                children: vec![child.clone()],
+            };
+            let node_ol = Node::List {
+                ordered: true,
+                children: vec![child.clone()],
+            };
             let html_ul = "<ul>CONTENT</ul>\n";
             let html_ol = "<ol>CONTENT</ol>\n";
             assert_eq!(node_ul.to_html(), html_ul);
@@ -217,28 +263,64 @@ mod node_tests {
 
         // List Item
         {
-            let node = Node::ListItem { children: vec![child.clone()] };
+            let node = Node::ListItem {
+                children: vec![child.clone()],
+            };
             let html = "<li>CONTENT</li>\n";
             assert_eq!(node.to_html(), html);
         }
 
         // CodeBlock
         {
-            let node = Node::CodeBlock { children: vec![child.clone()] };
+            let node = Node::CodeBlock {
+                children: vec![child.clone()],
+            };
             let html = "<code>CONTENT</code>\n";
             assert_eq!(node.to_html(), html);
         }
 
         // BlockQuote
         {
-            let node = Node::BlockQuote { children: vec![child.clone()] };
+            let node = Node::BlockQuote {
+                children: vec![child.clone()],
+            };
             let html = "<blockquote>CONTENT</blockquote>\n";
+            assert_eq!(node.to_html(), html);
+        }
+
+        // Bold
+        {
+            let node = Node::Bold {
+                children: vec![child.clone()],
+            };
+            let html = "<strong>CONTENT</strong>";
+            assert_eq!(node.to_html(), html);
+        }
+
+        // Italic
+        {
+            let node = Node::Italic {
+                children: vec![child.clone()],
+            };
+            let html = "<em>CONTENT</em>";
+            assert_eq!(node.to_html(), html);
+        }
+
+        // BoldItalic
+        {
+            let node = Node::BoldItalic {
+                children: vec![child.clone()],
+            };
+            let html = "<strong><em>CONTENT</em></strong>";
             assert_eq!(node.to_html(), html);
         }
 
         // Link
         {
-            let node = Node::Link { href: "HREF".into(), children: vec![child.clone()]};
+            let node = Node::Link {
+                href: "HREF".into(),
+                children: vec![child.clone()],
+            };
             let html = "<a href=\"HREF\">CONTENT</a>";
             assert_eq!(node.to_html(), html);
         }
@@ -248,44 +330,30 @@ mod node_tests {
     fn can_return_html_string_for_inline_nodes() {
         // Text
         {
-            let node = Node::Text { content: "x".into() };
+            let node = Node::Text {
+                content: "x".into(),
+            };
             let html = "x";
-            assert_eq!(node.to_html(), html);
-        }
-
-        // Bold
-        {
-            let node = Node::Bold { content: "x".into() };
-            let html = "<strong>x</strong>";
-            assert_eq!(node.to_html(), html);
-        }
-
-        // Italic
-        {
-            let node = Node::Italic { content: "x".into() };
-            let html = "<em>x</em>";
-            assert_eq!(node.to_html(), html);
-        }
-
-        // BoldItalic
-        {
-            let node = Node::BoldItalic { content: "x".into() };
-            let html = "<strong><em>x</em></strong>";
             assert_eq!(node.to_html(), html);
         }
 
         // Code
         {
-            let node = Node::Code { content: "x".into() };
+            let node = Node::Code {
+                content: "x".into(),
+            };
             let html = "<code>x</code>";
             assert_eq!(node.to_html(), html);
         }
     }
-    
+
     #[test]
     fn can_return_html_string_for_special_nodes() {
         {
-            let node = Node::Image { src: "SOURCE".into(), alt: "ALT".into() };
+            let node = Node::Image {
+                src: "SOURCE".into(),
+                alt: "ALT".into(),
+            };
             let html = "<img src=\"SOURCE\" alt=\"ALT\">\n";
             assert_eq!(node.to_html(), html);
         }
@@ -369,9 +437,47 @@ mod node_tests {
         assert!(!block_quote_node.is_empty());
         assert!(block_quote_node_empty.is_empty());
 
+        // Bold
+        let bold_node = Node::Bold {
+            children: vec![Node::Text {
+                content: "bold".into(),
+            }],
+        };
+        let bold_node_empty = Node::Bold { children: vec![] };
+        assert!(!bold_node.is_empty());
+        assert!(bold_node_empty.is_empty());
+
+        // Italic
+        let italic_node = Node::Italic {
+            children: vec![Node::Text {
+                content: "italic".into(),
+            }],
+        };
+        let italic_node_empty = Node::Italic { children: vec![] };
+        assert!(!italic_node.is_empty());
+        assert!(italic_node_empty.is_empty());
+
+        // Bold Italic
+        let bold_italic_node = Node::BoldItalic {
+            children: vec![Node::Text {
+                content: "bold italic".into(),
+            }],
+        };
+        let bold_italic_node_empty = Node::BoldItalic { children: vec![] };
+        assert!(!bold_italic_node.is_empty());
+        assert!(bold_italic_node_empty.is_empty());
+
         // Link
-        let link_node = Node::Link { href: "x".into(), children: vec![Node::Text{content: "link".into()}] };
-        let link_node_empty = Node::Link  { href: "".into(), children: vec![] };
+        let link_node = Node::Link {
+            href: "x".into(),
+            children: vec![Node::Text {
+                content: "link".into(),
+            }],
+        };
+        let link_node_empty = Node::Link {
+            href: "".into(),
+            children: vec![],
+        };
         assert!(!link_node.is_empty());
         assert!(link_node_empty.is_empty());
     }
@@ -382,53 +488,31 @@ mod node_tests {
         let text_node = Node::Text {
             content: "text".into(),
         };
-        let bold_node = Node::Bold {
-            content: "bold".into(),
-        };
-        let italic_node = Node::Italic {
-            content: "italic".into(),
-        };
-        let bold_italic_node = Node::BoldItalic {
-            content: "both".into(),
-        };
         let code_node = Node::Code {
             content: "code".into(),
         };
 
         assert!(!text_node.is_empty());
-        assert!(!bold_node.is_empty());
-        assert!(!italic_node.is_empty());
-        assert!(!bold_italic_node.is_empty());
         assert!(!code_node.is_empty());
 
         // empty
-        let text_node_empty = Node::Text {
-            content: "".into(),
-        };
-        let bold_node_empty = Node::Bold {
-            content: "".into(),
-        };
-        let italic_node_empty = Node::Italic {
-            content: "".into(),
-        };
-        let bold_italic_node_empty = Node::BoldItalic {
-            content: "".into(),
-        };
-        let code_node_empty = Node::Code {
-            content: "".into(),
-        };
+        let text_node_empty = Node::Text { content: "".into() };
+        let code_node_empty = Node::Code { content: "".into() };
 
         assert!(text_node_empty.is_empty());
-        assert!(bold_node_empty.is_empty());
-        assert!(italic_node_empty.is_empty());
-        assert!(bold_italic_node_empty.is_empty());
         assert!(code_node_empty.is_empty());
     }
 
     #[test]
     fn can_return_when_empty_for_special_nodes() {
-        let image_node = Node::Image { src: "x".into(), alt: "x".into() };
-        let image_node_empty = Node::Image { src: "".into(), alt: "".into() };
+        let image_node = Node::Image {
+            src: "x".into(),
+            alt: "x".into(),
+        };
+        let image_node_empty = Node::Image {
+            src: "".into(),
+            alt: "".into(),
+        };
         assert!(!image_node.is_empty());
         assert!(image_node_empty.is_empty());
     }
@@ -493,6 +577,29 @@ mod node_tests {
         };
         let bq_children = bq.children().expect("BlockQuote should have children");
         assert_eq!(bq_children.len(), 1);
+
+        // Bold
+        let bold = Node::Bold {
+            children: vec![child.clone()],
+        };
+        let bold_children = bold.children().expect("BlockQuote should have children");
+        assert_eq!(bold_children.len(), 1);
+
+        // Italic
+        let italic = Node::Italic {
+            children: vec![child.clone()],
+        };
+        let italic_children = italic.children().expect("BlockQuote should have children");
+        assert_eq!(italic_children.len(), 1);
+
+        // Bold Italic
+        let bold_italic = Node::BoldItalic {
+            children: vec![child.clone()],
+        };
+        let bold_italic_children = bold_italic
+            .children()
+            .expect("BlockQuote should have children");
+        assert_eq!(bold_italic_children.len(), 1);
     }
 
     #[test]
@@ -500,23 +607,11 @@ mod node_tests {
         let text = Node::Text {
             content: "x".into(),
         };
-        let bold = Node::Bold {
-            content: "x".into(),
-        };
-        let italic = Node::Italic {
-            content: "x".into(),
-        };
-        let bolditalic = Node::BoldItalic {
-            content: "x".into(),
-        };
         let code = Node::Code {
             content: "x".into(),
         };
 
         assert!(text.children().is_none());
-        assert!(bold.children().is_none());
-        assert!(italic.children().is_none());
-        assert!(bolditalic.children().is_none());
         assert!(code.children().is_none());
     }
 
@@ -531,7 +626,9 @@ mod node_tests {
 
     #[test]
     fn add_child_succeeds_for_structure_nodes() {
-        let child = Node::Text { content: "x".into() };
+        let child = Node::Text {
+            content: "x".into(),
+        };
 
         // Document
         {
@@ -543,7 +640,10 @@ mod node_tests {
 
         // Heading
         {
-            let mut node = Node::Heading { level: 1, children: vec![] };
+            let mut node = Node::Heading {
+                level: 1,
+                children: vec![],
+            };
             node.add_child(child.clone());
             let len = node.children().map(|c| c.len()).unwrap_or(0);
             assert_eq!(len, 1, "Heading should have 1 child");
@@ -559,7 +659,10 @@ mod node_tests {
 
         // List
         {
-            let mut node = Node::List { ordered: false, children: vec![] };
+            let mut node = Node::List {
+                ordered: false,
+                children: vec![],
+            };
             node.add_child(child.clone());
             let len = node.children().map(|c| c.len()).unwrap_or(0);
             assert_eq!(len, 1, "List should have 1 child");
@@ -588,9 +691,37 @@ mod node_tests {
             let len = node.children().map(|c| c.len()).unwrap_or(0);
             assert_eq!(len, 1, "BlockQuote should have 1 child");
         }
+
+        // Bold
+        {
+            let mut node = Node::Bold { children: vec![] };
+            node.add_child(child.clone());
+            let len = node.children().map(|c| c.len()).unwrap_or(0);
+            assert_eq!(len, 1, "Bold should have 1 child");
+        }
+
+        // Italic
+        {
+            let mut node = Node::Italic { children: vec![] };
+            node.add_child(child.clone());
+            let len = node.children().map(|c| c.len()).unwrap_or(0);
+            assert_eq!(len, 1, "Italic should have 1 child");
+        }
+
+        // Bold Italic
+        {
+            let mut node = Node::BoldItalic { children: vec![] };
+            node.add_child(child.clone());
+            let len = node.children().map(|c| c.len()).unwrap_or(0);
+            assert_eq!(len, 1, "BoldItalic should have 1 child");
+        }
+
         // Link
         {
-            let mut node = Node::Link { href: "x".into(), children: vec![] };
+            let mut node = Node::Link {
+                href: "x".into(),
+                children: vec![],
+            };
             node.add_child(child.clone());
             let len = node.children().map(|c| c.len()).unwrap_or(0);
             assert_eq!(len, 1, "Link should have 1 child");
@@ -599,7 +730,7 @@ mod node_tests {
 
     #[test]
     #[should_panic(expected = "Can't add child to this node type.")]
-    fn add_child_panics_for_inline_nodes() {
+    fn add_child_panics_for_text_node() {
         let child = Node::Text {
             content: "x".into(),
         };
@@ -607,29 +738,27 @@ mod node_tests {
         let mut text = Node::Text {
             content: "x".into(),
         };
-        let mut bold = Node::Bold {
+
+        text.add_child(child.clone());
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't add child to this node type.")]
+    fn add_child_panics_for_code_node() {
+        let child = Node::Text {
             content: "x".into(),
         };
-        let mut italic = Node::Italic {
-            content: "x".into(),
-        };
-        let mut bolditalic = Node::BoldItalic {
-            content: "x".into(),
-        };
+
         let mut code = Node::Code {
             content: "x".into(),
         };
 
-        text.add_child(child.clone());
-        bold.add_child(child.clone());
-        italic.add_child(child.clone());
-        bolditalic.add_child(child.clone());
         code.add_child(child.clone());
     }
 
     #[test]
     #[should_panic(expected = "Can't add child to this node type.")]
-    fn add_child_panics_for_special_nodes() {
+    fn add_child_panics_for_image_node() {
         let child = Node::Text {
             content: "x".into(),
         };
