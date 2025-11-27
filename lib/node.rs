@@ -12,6 +12,8 @@ pub enum Node {
 
     // Inline Nodes
     Text { content: String },
+
+    // TODO: THESE SHOULD BE STRUCTURE NODES, SO THEY CAN BE CALLED RECURSIVELY
     Bold { content: String },
     Italic { content: String },
     BoldItalic { content: String },

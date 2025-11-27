@@ -1,1 +1,7 @@
-# h1, **this** is sick as fuck 
+hello *world*. This is pre*tty* cool
+
+
+What about this
+
+
+This *should have a star

@@ -3,13 +3,16 @@ use transpiler::parser::Parser;
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = Filesystem::read_file("./test.md");
-    let content;
+    let mut content;
     match file {
         Ok(s) => content = s,
         Err(err) => panic!("Failed to read file. {}", err),
     }
 
-    let parser = Parser::new(&content);
+    // Normalize char stream
+    content = content.replace("\r\n", "\n").replace("\r", "");
+
+    let mut parser = Parser::new(&content);
     let node = parser.parse_document();
 
     match Filesystem::write_file("./output.html", &node.to_html()) {
