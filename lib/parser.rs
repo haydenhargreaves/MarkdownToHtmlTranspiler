@@ -49,69 +49,49 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_heading(&mut self) -> Node {
-        Node::Heading {
-            level: 1,
-            children: vec![],
-        }
-    }
-
     fn parse_paragraph(&mut self) -> Node {
+        self.consume_whitespace();
         Node::Paragraph {
             children: self.parse_inline(),
         }
     }
-
     // --- INLINE PARSING ---
     fn parse_inline(&mut self) -> Vec<Node> {
         let mut nodes = vec![];
-        let mut str = "".to_string();
+        let mut str = String::new();
 
         while !self.is_eof() {
-            // c1 stores current char, c2/c3 store future, contextual chars
             let c1 = self.peek();
             let c2 = self.peek_nth(1);
             let c3 = self.peek_nth(2);
 
-            // TODO: Need to redesign the nodes
-            // TODO: Support _ AND *
+            println!("parse_inline: c1={:?}, c2={:?}, c3={:?}", c1, c2, c3); // DEBUG
+
             match (c1, c2, c3) {
                 (None, _, _) | (Some('\n'), Some('\n'), _) => break,
-                (Some('!'), Some('['), _) =>
-                /* parse image */
-                {
-                    continue;
-                }
-                (Some('['), _, _) =>
-                /* parse link */
-                {
-                    continue;
-                }
-                (Some('*'), Some('*'), Some('*')) =>
-                /* parse bold italic */
-                {
-                    continue;
-                }
-                (Some('*'), Some('*'), _) =>
-                /* parse bold */
-                {
-                    continue;
-                }
-                (Some('*'), _, _) => {
-                    nodes.push(Node::Text {
-                        content: str.clone(),
-                    });
-                    str = "".to_string();
-                    let node = self.parse_italic();
-                    if !node.is_empty() {
-                        nodes.push(node);
+
+                // Check for ** (bold) before * (italic)
+                (Some('*'), Some('*'), _) => {
+                    println!("Matched bold");
+                    if !str.is_empty() {
+                        nodes.push(Node::Text {
+                            content: str.clone(),
+                        });
+                        str.clear();
                     }
-                    continue;
+                    nodes.push(self.parse_bold());
                 }
-                (Some('`'), _, _) =>
-                /* parse code */
-                {
-                    continue;
+
+                // Check for * (italic)
+                (Some('*'), _, _) => {
+                    println!("Matched italic");
+                    if !str.is_empty() {
+                        nodes.push(Node::Text {
+                            content: str.clone(),
+                        });
+                        str.clear();
+                    }
+                    nodes.push(self.parse_italic());
                 }
 
                 (Some(c), _, _) => {
@@ -121,34 +101,50 @@ impl<'a> Parser<'a> {
             }
         }
 
-        // TODO: Push text node
-        nodes.push(Node::Text { content: str });
+        if !str.is_empty() {
+            nodes.push(Node::Text { content: str });
+        }
+
         nodes
     }
 
-    fn parse_italic(&mut self) -> Node {
-        let mut str = "".to_string();
-        self.consume(); // Consume the '*'
+    fn parse_bold(&mut self) -> Node {
+        self.consume_n(2); // Consume opening '**'
 
-        println!("'{}'", self.content);
+        let mut children = vec![];
+        let mut str = String::new();
 
-        // Use loop instead of 'while !self.is_eof()' so we can make it to the (None, _) case to
-        // exit
-        loop {
+        while !self.is_eof() {
             let c1 = self.peek();
             let c2 = self.peek_nth(1);
 
+            println!("parse_bold: c1={:?} c2={:?}", c1, c2);
+
             match (c1, c2) {
-                (None, _) | (Some('\n'), None) | (Some('\n'), Some('\n')) => {
-                    // In this case, we did not find an ending star, so we should return a normal
-                    // node. But we have to add the star back since we consumed it already
-                    str.insert(0, '*');
-                    return Node::Text { content: str };
+                (None, _) | (Some('\n'), Some('\n')) => break,
+
+                // Found closing '**'
+                (Some('*'), Some('*')) => {
+                    println!("parse_bold: matched closing bold");
+                    if !str.is_empty() {
+                        children.push(Node::Text { content: str });
+                    }
+                    self.consume_n(2);
+                    return Node::Bold { children };
                 }
+
+                // Single '*' inside bold (italic)
                 (Some('*'), _) => {
-                    self.consume();
-                    break;
+                    println!("parse_bold: matched italic");
+                    if !str.is_empty() {
+                        children.push(Node::Text {
+                            content: str.clone(),
+                        });
+                        str.clear();
+                    }
+                    children.push(self.parse_italic());
                 }
+
                 (Some(c), _) => {
                     str.push(c);
                     self.consume();
@@ -156,10 +152,440 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Node::Italic {
-            children: vec![Node::Text { content: str }],
+        // No closing '**' found - return as text with '**' prefix
+        if !str.is_empty() {
+            children.push(Node::Text { content: str });
         }
+        let mut text = String::from("**");
+        for child in children {
+            if let Node::Text { content } = child {
+                text.push_str(&content);
+            }
+        }
+        Node::Text { content: text }
     }
+
+    fn parse_italic(&mut self) -> Node {
+        self.consume(); // Consume opening '*'
+
+        let mut children = vec![];
+        let mut str = String::new();
+
+        while !self.is_eof() {
+            let c1 = self.peek();
+            let c2 = self.peek_nth(1);
+
+            println!("parse_italic: c1={:?} c2={:?}", c1, c2);
+
+            match (c1, c2) {
+                (None, _) | (Some('\n'), Some('\n')) => break,
+
+                // Check for '**' (bold inside italic)
+                (Some('*'), Some('*')) => {
+                    println!("parse_italic: matched bold");
+                    if !str.is_empty() {
+                        children.push(Node::Text {
+                            content: str.clone(),
+                        });
+                        str.clear();
+                    }
+                    children.push(self.parse_bold());
+                }
+
+                // Single '*' - our closing delimiter
+                (Some('*'), _) => {
+                    println!("parse_italic: matched closing italic");
+                    if !str.is_empty() {
+                        children.push(Node::Text { content: str });
+                    }
+                    self.consume();
+                    return Node::Italic { children };
+                }
+
+                (Some(c), _) => {
+                    str.push(c);
+                    self.consume();
+                }
+            }
+        }
+
+        // No closing '*' found - return as text with '*' prefix
+        if !str.is_empty() {
+            children.push(Node::Text { content: str });
+        }
+        let mut text = String::from("*");
+        for child in children {
+            if let Node::Text { content } = child {
+                text.push_str(&content);
+            }
+        }
+        Node::Text { content: text }
+    }
+    // --- INLINE PARSING ---
+    // fn parse_inline(&mut self) -> Vec<Node> {
+    //     let mut nodes = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //         let c3 = self.peek_nth(2);
+    //
+    //         match (c1, c2, c3) {
+    //             // Stop at double newline (paragraph break)
+    //             (None, _, _) | (Some('\n'), Some('\n'), _) => break,
+    //
+    //             // Check for *** (bold italic) - LONGEST FIRST
+    //             (Some('*'), Some('*'), Some('*')) => {
+    //                 if !str.is_empty() {
+    //                     nodes.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 nodes.push(self.parse_bold_italic());
+    //             }
+    //
+    //             // Check for ** (bold)
+    //             (Some('*'), Some('*'), _) => {
+    //                 if !str.is_empty() {
+    //                     nodes.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 nodes.push(self.parse_bold());
+    //             }
+    //
+    //             // Check for * (italic)
+    //             (Some('*'), _, _) => {
+    //                 if !str.is_empty() {
+    //                     nodes.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 nodes.push(self.parse_italic());
+    //             }
+    //
+    //             // Regular character
+    //             (Some(c), _, _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     if !str.is_empty() {
+    //         nodes.push(Node::Text { content: str });
+    //     }
+    //
+    //     nodes
+    // }
+    //
+    // fn parse_bold_italic(&mut self) -> Node {
+    //     self.consume_n(3); // Consume opening '***'
+    //
+    //     let mut children = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //         let c3 = self.peek_nth(2);
+    //
+    //         match (c1, c2, c3) {
+    //             (None, _, _) | (Some('\n'), Some('\n'), _) => break,
+    //
+    //             // Found closing '***'
+    //             (Some('*'), Some('*'), Some('*')) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text { content: str });
+    //                 }
+    //                 self.consume_n(3);
+    //                 return Node::BoldItalic { children };
+    //             }
+    //
+    //             // Regular character (no nested formatting in bold-italic for simplicity)
+    //             (Some(c), _, _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     // No closing '***' found - return as text
+    //     if !str.is_empty() {
+    //         children.push(Node::Text { content: str });
+    //     }
+    //     let mut text = String::from("***");
+    //     for child in children {
+    //         if let Node::Text { content } = child {
+    //             text.push_str(&content);
+    //         }
+    //     }
+    //     Node::Text { content: text }
+    // }
+    //
+    // fn parse_bold(&mut self) -> Node {
+    //     self.consume_n(2); // Consume opening '**'
+    //
+    //     let mut children = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //         let c3 = self.peek_nth(2);
+    //
+    //         match (c1, c2, c3) {
+    //             (None, _, _) | (Some('\n'), Some('\n'), _) => break,
+    //
+    //             // Check for closing '**' but NOT '***'
+    //             (Some('*'), Some('*'), Some('*')) => {
+    //                 // This is ***, not our closing **
+    //                 // Treat as text (or you could support nested bold-italic)
+    //                 str.push('*');
+    //                 self.consume();
+    //             }
+    //
+    //             // Found closing '**'
+    //             (Some('*'), Some('*'), _) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text { content: str });
+    //                 }
+    //                 self.consume_n(2);
+    //                 return Node::Bold { children };
+    //             }
+    //
+    //             // Single '*' inside bold (italic)
+    //             (Some('*'), _, _) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 children.push(self.parse_italic());
+    //             }
+    //
+    //             (Some(c), _, _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     // No closing '**' found - return as text with '**' prefix
+    //     if !str.is_empty() {
+    //         children.push(Node::Text { content: str });
+    //     }
+    //     let mut text = String::from("**");
+    //     for child in children {
+    //         if let Node::Text { content } = child {
+    //             text.push_str(&content);
+    //         }
+    //     }
+    //     Node::Text { content: text }
+    // }
+    //
+    // fn parse_italic(&mut self) -> Node {
+    //     self.consume(); // Consume opening '*'
+    //
+    //     let mut children = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //         let c3 = self.peek_nth(2);
+    //
+    //         match (c1, c2, c3) {
+    //             (None, _, _) | (Some('\n'), Some('\n'), _) => break,
+    //
+    //             // Check for '***' - not our closing
+    //             (Some('*'), Some('*'), Some('*')) => {
+    //                 // Treat as text or handle specially
+    //                 str.push('*');
+    //                 self.consume();
+    //             }
+    //
+    //             // Check for '**' (bold inside italic)
+    //             (Some('*'), Some('*'), _) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 children.push(self.parse_bold());
+    //             }
+    //
+    //             // Single '*' - our closing delimiter
+    //             (Some('*'), _, _) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text { content: str });
+    //                 }
+    //                 self.consume();
+    //                 return Node::Italic { children };
+    //             }
+    //
+    //             (Some(c), _, _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     // No closing '*' found - return as text with '*' prefix
+    //     if !str.is_empty() {
+    //         children.push(Node::Text { content: str });
+    //     }
+    //     let mut text = String::from("*");
+    //     for child in children {
+    //         if let Node::Text { content } = child {
+    //             text.push_str(&content);
+    //         }
+    //     }
+    //     Node::Text { content: text }
+    // }
+    //
+    //
+    //
+    //
+    // fn parse_inline(&mut self) -> Vec<Node> {
+    //     self.parse_inline_until(&[])
+    // }
+    //
+    // fn parse_inline_until(&mut self, chars: &[char]) -> Vec<Node> {
+    //     let mut nodes = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //         let c3 = self.peek_nth(2);
+    //
+    //         match (c1, c2, c3) {
+    //             // Default stop conditions for all elements: empty or block break
+    //             (None, _, _) | (Some('\n'), Some('\n'), _) => break,
+    //
+    //             // Parse bold nodes
+    //             (Some('*'), Some('*'), _) => {
+    //                 if !str.is_empty() {
+    //                     nodes.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 nodes.push(self.parse_bold());
+    //             }
+    //
+    //             // Check the dynamic stop conditions
+    //             (Some(c), _, _) if chars.contains(&c) => break,
+    //
+    //             // Parse italic nodes
+    //             (Some('*'), _, _) => {
+    //                 if !str.is_empty() {
+    //                     nodes.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 nodes.push(self.parse_italic());
+    //             }
+    //
+    //             (Some(c), _, _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     // If content remains, push it to the list
+    //     if !str.is_empty() {
+    //         nodes.push(Node::Text { content: str });
+    //     }
+    //
+    //     nodes
+    // }
+    //
+    // fn parse_bold(&mut self) -> Node {
+    //     self.consume_n(2); // Consume opening '**'
+    //
+    //     // DON'T pass '*' as stop char - we need to look for '**' specifically
+    //     let mut children = vec![];
+    //     let mut str = String::new();
+    //
+    //     while !self.is_eof() {
+    //         let c1 = self.peek();
+    //         let c2 = self.peek_nth(1);
+    //
+    //         match (c1, c2) {
+    //             (None, _) | (Some('\n'), Some('\n')) => break,
+    //
+    //             // Found closing '**'
+    //             (Some('*'), Some('*')) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text { content: str });
+    //                 }
+    //                 self.consume_n(2);
+    //                 return Node::Bold { children };
+    //             }
+    //
+    //             // Single '*' inside bold (could be italic)
+    //             (Some('*'), _) => {
+    //                 if !str.is_empty() {
+    //                     children.push(Node::Text {
+    //                         content: str.clone(),
+    //                     });
+    //                     str.clear();
+    //                 }
+    //                 children.push(self.parse_italic());
+    //             }
+    //
+    //             (Some(c), _) => {
+    //                 str.push(c);
+    //                 self.consume();
+    //             }
+    //         }
+    //     }
+    //
+    //     // No closing '**' found
+    //     if !str.is_empty() {
+    //         children.push(Node::Text { content: str });
+    //     }
+    //     let mut text = String::from("**");
+    //     for child in children {
+    //         if let Node::Text { content } = child {
+    //             text.push_str(&content);
+    //         }
+    //     }
+    //     Node::Text { content: text }
+    // }
+    //
+    // fn parse_italic(&mut self) -> Node {
+    //     self.consume(); // Consume opening '*'
+    //
+    //     // Parse inline content until we hit closing '*' or end condition
+    //     let children = self.parse_inline_until(&['*', '\n']);
+    //
+    //     // Check if we found the closing '*'
+    //     if self.peek() == Some('*') {
+    //         self.consume(); // Consume closing '*'
+    //         Node::Italic { children }
+    //     } else {
+    //         // No closing '*' found - return as plain text with the '*' prefix
+    //         let mut text = String::from("*");
+    //         for child in children {
+    //             if let Node::Text { content } = child {
+    //                 text.push_str(&content);
+    //             }
+    //             // Note: This is simplified - you'd need to flatten properly
+    //         }
+    //         Node::Text { content: text }
+    //     }
+    // }
 
     // --- HELPERS ---
     fn is_eof(&self) -> bool {
@@ -230,7 +656,7 @@ mod parser_tests {
         }
         {
             let s = "*hello world\n";
-            let html = "*hello world";
+            let html = "*hello world\n";
             let mut p = Parser::new(s);
             let node = p.parse_italic();
             assert_eq!(node.to_html(), html);
@@ -248,6 +674,58 @@ mod parser_tests {
             let mut p = Parser::new(s);
             let node = p.parse_italic();
             assert_eq!(node.to_html(), html);
+        }
+    }
+
+    #[test]
+    fn test_nested_bold_and_italics() {
+        {
+            let s = "***a***";
+            let html = "<strong><em>a</em></strong>";
+            let mut p = Parser::new(s);
+            let nodes = p.parse_inline();
+            assert_eq!(nodes.len(), 1);
+            assert_eq!(nodes[0].to_html(), html);
+        }
+        {
+            let s = "*a **b** c*";
+            let html = "<em>a <strong>b</strong> c</em>";
+            let mut p = Parser::new(s);
+            let nodes = p.parse_inline();
+            assert_eq!(nodes.len(), 1);
+            assert_eq!(nodes[0].to_html(), html);
+        }
+        {
+            let s = "**a *b* c**";
+            let html = "<strong>a <em>b</em> c</strong>";
+            let mut p = Parser::new(s);
+            let nodes = p.parse_inline();
+            assert_eq!(nodes.len(), 1);
+            assert_eq!(nodes[0].to_html(), html);
+        }
+        {
+            let s = "*a *b* c*";
+            let html_1 = "<em>a </em>";
+            let html_2 = "b";
+            let html_3 = "<em> c</em>";
+            let mut p = Parser::new(s);
+            let nodes = p.parse_inline();
+            assert_eq!(nodes.len(), 3);
+            assert_eq!(nodes[0].to_html(), html_1);
+            assert_eq!(nodes[1].to_html(), html_2);
+            assert_eq!(nodes[2].to_html(), html_3);
+        }
+        {
+            let s = "**a **b** c**";
+            let html_1 = "<strong>a </strong>";
+            let html_2 = "b";
+            let html_3 = "<strong> c</strong>";
+            let mut p = Parser::new(s);
+            let nodes = p.parse_inline();
+            assert_eq!(nodes.len(), 3);
+            assert_eq!(nodes[0].to_html(), html_1);
+            assert_eq!(nodes[1].to_html(), html_2);
+            assert_eq!(nodes[2].to_html(), html_3);
         }
     }
 }
